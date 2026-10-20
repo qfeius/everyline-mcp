@@ -2,7 +2,7 @@
 name: everyline-review
 description: 通过 EveryLine MCP 审查用户提供的合同文件 URL，选择主体、强度和清单，继续已有审查任务并展示结果。
 metadata:
-  version: "1.2.0"
+  version: "1.3.0"
 ---
 
 # EveryLine 合同审查（MCP）
