@@ -1,7 +1,8 @@
 stages: [prepare, test, build, package]
 
 default:
-  image: golang:1.24
+  # 复用共享 CI 的内网构建镜像，避免新 Runner 节点从 Docker Hub 冷拉取。
+  image: matrix-cn-beijing.cr.volces.com/cicd/ubuntu24:go-1.25
 
 variables:
   # 当前 Runner 访问 proxy.golang.org 会超时；项目/组级 GOPROXY 变量可覆盖此默认值。
@@ -19,7 +20,7 @@ cache:
 
 prepare-node:
   stage: prepare
-  image: node:22
+  image: matrix-cn-beijing.cr.volces.com/cicd/ubuntu24:npm-22
   cache: []
   script:
     # 从已有 Node 镜像导出运行时，通过 GitLab 制品传递，避免测试时访问 Debian 软件源。
@@ -64,7 +65,7 @@ build:
       dotenv: bin/version.env
 
 package:
-  image: node:22
+  image: matrix-cn-beijing.cr.volces.com/cicd/ubuntu24:npm-22
   stage: package
   needs:
     - job: build
