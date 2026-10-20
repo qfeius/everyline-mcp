@@ -2,7 +2,9 @@
 
 ## 自动化门禁
 
-运行环境需要 Go 1.24+ 和 Node.js 18+，且 `go`、`node` 均在 `PATH` 中。`internal/config` 的授权状态并发测试会构建真实 CLI，并通过 Node 安装器验证跨进程文件锁及授权状态保留；GitLab 的 `test` 作业在 Go 镜像中安装 Node.js 后再执行测试。
+运行环境需要 Go 1.24+ 和 Node.js 18+，且 `go`、`node` 均在 `PATH` 中。`internal/config` 的授权状态并发测试会构建真实 CLI，并通过 Node 安装器验证跨进程文件锁及授权状态保留。
+
+GitLab 的 `prepare-node` 作业复用打包作业使用的官方 `node:22` 镜像，将 Node 可执行文件保存为临时制品；`test` 继续使用 Go 镜像，下载该制品并加入 `PATH`，不在测试前运行 apt 或下载 Debian 软件包。准备和测试 Runner 应使用相同的 Linux CPU 架构。`build` 不下载 Node 制品，`package` 仍只接收构建制品。修改 CI 配置后需用新提交创建流水线，重试旧流水线中的作业仍会使用旧配置。
 
 ```bash
 go test ./...

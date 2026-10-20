@@ -1,4 +1,4 @@
-stages: [test, build, package]
+stages: [prepare, test, build, package]
 
 default:
   image: golang:1.24
@@ -17,12 +17,26 @@ cache:
     - .cache/go-mod/
     - .cache/go-build/
 
+prepare-node:
+  stage: prepare
+  image: node:22
+  cache: []
+  script:
+    # 从已有 Node 镜像导出运行时，通过 GitLab 制品传递，避免测试时访问 Debian 软件源。
+    - mkdir -p tmp/ci-node/bin
+    - cp "$(command -v node)" tmp/ci-node/bin/node
+    - tmp/ci-node/bin/node --version
+  artifacts:
+    paths:
+      - tmp/ci-node/bin/node
+    expire_in: 1 day
+
 test:
   stage: test
+  dependencies:
+    - prepare-node
   before_script:
-    # 授权状态并发测试会执行真实 Node 安装器，Go 镜像需补齐该运行时。
-    - apt-get update
-    - apt-get install -y --no-install-recommends nodejs
+    - export PATH="$CI_PROJECT_DIR/tmp/ci-node/bin:$PATH"
     - node --version
   script:
     - go test -race ./...
@@ -32,6 +46,8 @@ test:
 
 build:
   stage: build
+  # 构建只需要 Go，避免下载仅供测试使用的 Node 制品。
+  dependencies: []
   script:
     - |
       if [ -n "${CI_COMMIT_TAG:-}" ]; then
