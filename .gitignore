@@ -1,0 +1,9 @@
+.DS_Store
+.idea/
+.everyline-cli-mcp/
+/everyline-cli-mcp
+/everyline-cli-mcp.exe
+bin/
+dist/
+coverage.out
+tmp/

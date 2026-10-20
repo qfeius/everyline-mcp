@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "name": "everyline-mcp-skills",
+  "version": "1.2.0",
+  "skills": [
+    {
+      "name": "everyline-review",
+      "sha256": "1fa342661bf61f7772c61b3ded83bd2c33c4c4591cb66c44d68e126aae357336"
+    },
+    {
+      "name": "everyline-review-config",
+      "sha256": "6c814faa456d7b603e4746cfe58577c52b18c43699d63941e170d7263772879f"
+    }
+  ]
+}
