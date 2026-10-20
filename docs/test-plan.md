@@ -2,6 +2,8 @@
 
 ## 自动化门禁
 
+运行环境需要 Go 1.24+ 和 Node.js 18+，且 `go`、`node` 均在 `PATH` 中。`internal/config` 的授权状态并发测试会构建真实 CLI，并通过 Node 安装器验证跨进程文件锁及授权状态保留；GitLab 的 `test` 作业在 Go 镜像中安装 Node.js 后再执行测试。
+
 ```bash
 go test ./...
 go vet ./...
@@ -11,6 +13,7 @@ go build ./cmd/everyline-cli-mcp
 覆盖范围：
 
 - Profile 原子落盘、默认选择和权限。
+- Node 安装器等待 CLI 授权状态文件锁，更新版本时保留刚完成的授权结果和安装事件。
 - user 默认身份的 Profile 可不配置 app-id；app 默认身份和 app 登录仍拒绝缺失 app-id。
 - token 请求字段、`code=0`、过期时间与缓存脱敏。
 - app 登录的 flag/env/Profile 凭证优先级、app-id 更新、secret 脱敏和失败不污染配置。

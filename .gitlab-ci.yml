@@ -19,6 +19,11 @@ cache:
 
 test:
   stage: test
+  before_script:
+    # 授权状态并发测试会执行真实 Node 安装器，Go 镜像需补齐该运行时。
+    - apt-get update
+    - apt-get install -y --no-install-recommends nodejs
+    - node --version
   script:
     - go test -race ./...
     - go vet ./...
