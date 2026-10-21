@@ -28,3 +28,7 @@ Chart 从实际 Helm 输出编译入口参数 Schema，使用 request-validation
 ## 宿主联调
 
 在测试环境验证宿主发现 25 项 MCP 工具并完成 OAuth；用户只提出“审查合同”时，应先调用 `read-review-skill`，再上传、选择主体/强度/清单，最后发起与查询任务。既有任务直接续办；配置操作先调用 `read-review-config-skill`。用户尚未选择强度或规则来源时，应停在该项选择步骤。记录真实工具调用、授权及附件可达性结果，本地静态和 SDK 验证不代替宿主联调。
+
+豆包验收分别记录工具发现和任务选路：25 项工具可见仅通过前一项。检查个人 Skill 版本、同名本地 Skill 及内置“合同审查”的启用状态后，以新任务的真实调用记录确认 `read-review-skill` 已返回；读取 `doubao-contract-reviewer` 或运行其预检脚本仍判定选路失败。只有用户明确给齐三项选择后才允许出现 `start-review-task`。附件只有本地路径时应停在文件传输条件检查，不能以本地解析生成报告代替 MCP 流程。
+
+2026-10-21 豆包现场验收：替换个人两项 Skill 为 2.1.0，停用内置合同审查、旧 CLI 和重复来源的审查技能后，新任务仅提交本地 DOCX 附件和“审查合同”。真实调用依次包含 `read-review-skill`、`upload-contract-file-by-url`、`extract-contract-subjects`、`list-review-checklists`；宿主使用 `FileBatchUpload` 为本地附件取得可访问 URL。界面展示 3 项确认卡片，分别选择立场、强度和清单；验收停在等待用户选择处，`start-review-task` 调用数为 0。本次通过默认选路、附件传输和三项选择展示验证，未执行正式审查及结果查询。
