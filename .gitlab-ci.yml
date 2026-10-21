@@ -1,8 +1,17 @@
 stages: [test, package]
 
 default:
-  # 仅使用 Node 开发工具；运行镜像需包含 Git、tar、zip 和 unzip。
+  # 复用现有 Node 镜像；ZIP 打包和解包工具在各作业启动时按需补齐。
   image: matrix-cn-beijing.cr.volces.com/cicd/ubuntu24:npm-22
+  before_script:
+    - |
+      set -e
+      if ! command -v zip >/dev/null 2>&1 || ! command -v unzip >/dev/null 2>&1; then
+        apt-get update
+        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends zip unzip
+      fi
+      command -v zip >/dev/null
+      command -v unzip >/dev/null
 
 test:
   stage: test

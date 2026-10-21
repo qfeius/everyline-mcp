@@ -10,7 +10,7 @@ make release-check
 
 自动化覆盖 Skill 身份、版本、摘要、Git 换行行为、无效变更阻止发布、旧 Chart 同步入口退役、发布标签匹配、源归档离线校验/重建、宿主 ZIP 根目录及正文一致性、重复打包清理旧条目。
 
-`package.json` 是私有维护工具清单；项目不构建或安装 CLI，也不发布 npm 业务命令。GitLab 使用已有 Node 22 镜像运行测试与打包；GitHub 使用 Node 24，发布标签必须与 Skill manifest 完全一致。
+`package.json` 是私有维护工具清单；项目不构建或安装 CLI，也不发布 npm 业务命令。GitLab 使用已有 Node 22 镜像运行测试与打包；`default.before_script` 检查 `zip` 和 `unzip`，缺少任意一项时通过 apt 安装两项工具，并在安装后再次检查。`test` 与 `package` 在独立容器中执行，均继承该准备步骤；软件源更新或安装失败时立即结束作业。GitHub 使用 Node 24，发布标签必须与 Skill manifest 完全一致。
 
 ## MCP Chart
 
