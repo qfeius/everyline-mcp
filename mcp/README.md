@@ -20,7 +20,7 @@ MCP 只发布 23 项业务工具：5 项上传/审查、7 项清单、4 项分�
 
 从旧 CLI 版迁移时，替换宿主中原有同名 Skill，随后重新加载。仅添加连接器只会获得业务工具，完整流程还需要宿主安装 Skill。
 
-业务工具参数统一使用 `input` 对象，无筛选条件传 `{"input":{}}`。文件、任务与资源 ID 按字符串传递。MCP 工具中没有 Skill 读取入口，也没有一键审查或等待结果入口。
+业务参数直接放在 arguments 顶层，例如上传传 `{"fileUrl":"https://example.com/contract.pdf","name":"contract.pdf"}`，无筛选条件传 `{}`。Higress 按参数逐项展示注释；`config`、`data` 和数组保留业务结构。文件、任务与资源 ID 按字符串传递。MCP 工具中没有 Skill 读取入口，也没有一键审查或等待结果入口。
 
 ## 连接器授权
 
@@ -37,18 +37,24 @@ Chart 使用现有 `/api/public/verify-access-token` 验真，失败关闭访问
 `mcp/skills-manifest.json` 记录 MCP 版 Skill 的独立版本、名称与正文 SHA-256，两项 Skill 的 `metadata.version` 与清单一致。该清单是本工程唯一发布版本来源；宿主 Skill 和 Chart 各自维护版本，仅修改 Skill 流程时无需重发 Chart。`package.json` 为私有维护工具清单，不注册业务命令或安装钩子。
 
 ```sh
-node scripts/sync-mcp-skills.js --version 1.4.0
+node scripts/sync-mcp-skills.js --version 2.0.0
 make mcp-check
 make mcp-package
 ```
 
 上例版本替换为本次 Skill 版本。打包需要 Node.js、tar 和 zip。`make mcp-package` 生成以下文件及各自的 `.sha256`：
 
-- `dist/everyline-mcp-skills-1.4.0.tgz`：两项 Skill、清单、说明和独立校验/打包脚本。
-- `dist/everyline-review-mcp-skill-1.4.0.zip`：审查 Skill，ZIP 根目录为 `SKILL.md`。
-- `dist/everyline-review-config-mcp-skill-1.4.0.zip`：配置 Skill，ZIP 根目录为 `SKILL.md`。
+- `dist/everyline-mcp-skills-2.0.0.tgz`：两项 Skill、清单、说明和独立校验/打包脚本。
+- `dist/everyline-review-mcp-skill-2.0.0.zip`：审查 Skill，ZIP 根目录为 `SKILL.md`。
+- `dist/everyline-review-config-mcp-skill-2.0.0.zip`：配置 Skill，ZIP 根目录为 `SKILL.md`。
 
-核对发布文件摘要后，ZIP 可直接交给宿主导入。使用源归档时，解压后执行 `node scripts/sync-mcp-skills.js --check` 验证正文；也可用自带脚本重新生成导入包。`make release-check`、GitHub 发布与 GitLab 打包均校验并交付这些独立制品。发布标签通过 `node scripts/sync-mcp-skills.js --check-tag v1.4.0` 核对，并须匹配清单版本。CI 只发布 Skill 制品。
+核对发布文件摘要后，ZIP 可直接交给宿主导入。使用源归档时，解压后执行 `node scripts/sync-mcp-skills.js --check` 验证正文；也可用自带脚本重新生成导入包。`make release-check`、GitHub 发布与 GitLab 打包均校验并交付这些独立制品。发布标签通过 `node scripts/sync-mcp-skills.js --check-tag v2.0.0` 核对，并须匹配清单版本。CI 只发布 Skill 制品。
+
+## 从 input 包装迁移到独立参数
+
+Chart 0.5.0 / MCP 2.0.0 将 23 项工具的业务参数展开为 53 个顶层参数，使 Higress 工具页按字段显示名称和注释。旧的 `{"input":{...}}` 调用会被拒绝；新调用直接传 `{...}`。两份 Skill 同步升级为 2.0.0，需配套更新 Chart、导入 Skill 并刷新宿主工具清单，避免旧调用格式混用。
+
+Chart 增加仅绑定本入口的 `request-validation:2.0.3`，在 SDK 类型转换和字段筛选前验证原始参数，保留未知字段拒绝与整数校验。业务路径、请求体和鉴权保持原有约定；新增插件需随完整 Chart 部署，不能只替换工具列表。本地配置及制品完成不代表已部署。
 
 ## 从 Chart 内嵌 Skill 迁移
 

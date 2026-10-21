@@ -23,7 +23,7 @@ helm template everyline-cli-mcp ./everyline-cli-mcp
 MCP_CONFIG_FILES=everyline-cli-mcp/files/mcp-config.yaml sh scripts/validate-changed-mcp-configs.sh
 ```
 
-Chart 通过 Higress SDK 验证 23 项业务工具的实际注册、请求路由、参数、身份透传、长 ID、批量正文及错误响应，并检查 Skill 读取工具和正文注入已移除。这里的 Go 是 Chart 测试依赖，与用户业务调用无关。
+Chart 从实际 Helm 输出编译入口参数 Schema，使用 request-validation 同版本校验引擎，再通过 Higress SDK 验证 23 项业务工具的注册、请求路由、身份透传、长 ID、批量正文及错误响应。回归检查 53 个顶层参数、必填标记与注释，拒绝旧 `input` 包装、未知参数、小数页码和错误类型，同时放行初始化、工具发现与通知。这里的 Go 是 Chart 测试依赖，与用户业务调用无关。
 
 ## 宿主联调
 

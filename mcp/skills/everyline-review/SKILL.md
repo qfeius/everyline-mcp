@@ -2,7 +2,7 @@
 name: everyline-review
 description: 通过 EveryLine MCP 审查用户提供的合同文件 URL，选择主体、强度和清单，继续已有审查任务并展示结果。
 metadata:
-  version: "1.4.0"
+  version: "2.0.0"
 ---
 
 # EveryLine 合同审查（MCP）
@@ -11,7 +11,7 @@ metadata:
 
 ## 请求与结果规则
 
-- 业务工具的全部参数放在 `input` 对象中，例如上传调用 `{"input":{"fileUrl":"https://example.com/contract.pdf","name":"contract.pdf"}}`；无筛选查询使用 `{"input":{}}`。
+- 业务参数直接放在工具 arguments 顶层，例如上传调用 `{"fileUrl":"https://example.com/contract.pdf","name":"contract.pdf"}`；无筛选查询使用 `{}`。本版对应 MCP 2.0.0，省去旧版 `input` 包装；宿主须刷新工具清单后使用本 Skill。
 - 每次调用使用当前连接器用户身份，文件、任务和清单均以服务端返回的可见范围为准。
 - 工具报错、HTTP 401/403 或业务错误即停止当前步骤。401 提示重新授权连接器；403 展示权限原因并停止流程，不切换身份、环境或文件来源重试。
 - EveryLine 业务成功码为 `200`（数字或字符串）；工具调用成功不代表审查任务完成。保留接口原因，错误不解释为无风险或空列表。

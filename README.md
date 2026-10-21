@@ -33,7 +33,7 @@ make release-check
 修改 Skill 后更新独立版本及摘要：
 
 ```sh
-node scripts/sync-mcp-skills.js --version 1.4.0
+node scripts/sync-mcp-skills.js --version 2.0.0
 make release-check
 ```
 

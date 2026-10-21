@@ -30,7 +30,7 @@ MCP 业务工具由 `dev-contract-charts/everyline-cli-mcp/files/mcp-config.yaml
 
 ## 参数与结果
 
-所有参数放在 `input` 对象内，无筛选查询使用 `{"input":{}}`。文件、任务、清单、分组和规则 ID 按字符串传递。MCP 校验必填项、类型、已声明字段及组合约束，返回业务结果与错误原因。
+MCP 2.0.0 的业务参数直接放在 arguments 顶层，例如上传传 `{"fileUrl":"https://example.com/contract.pdf","name":"contract.pdf"}`，无筛选查询使用 `{}`。Higress 按顶层 `args` 逐项展示参数名称与注释；`config`、`data` 和数组保留各自的业务结构及子字段说明。文件、任务、清单、分组和规则 ID 按字符串传递。入口在 SDK 转换和筛选前拒绝未声明字段、类型错误及旧 `input` 包装，模板继续校验必填项和业务组合约束。
 
 上传接收 `fileUrl` 与 `name`，返回后续审查所需的 `businessId`、`fileId`、`fileHash`。发起任务使用这些标识与 `config`；`config` 包含主体名称、角色、`reviewStrength=0/1/2`，以及非空自定义清单 ID 或 `matchContractTypeRulePackage=true`，两种规则来源支持组合。用量字段沿用既有后端计量值 `everyLine_100_openApi_cli`，由请求映射固定注入；该字段名称是后端契约，不表示运行 CLI。
 
