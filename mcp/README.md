@@ -10,7 +10,21 @@
 
 `mcp/skills/` 是 Skill 唯一维护源。test 工具映射与授权配置维护在 `test-contract-charts` 仓库 `20261016-zss-everyline-mcp` 分支的 `everyline-cli-mcp-test/` Chart。本工程已移除 CLI 实现及构建发布链路，只保留 Skill、接口说明与维护脚本。
 
-MCP 2.1.0 发布 25 项工具：2 项 Skill 读取、5 项上传/审查、7 项清单、4 项分组、7 项规则接口。业务工具说明指向对应的 Skill 读取入口，状态和详情每次查询一次，列表每次读取一页；后续调用由宿主按 Skill 安排。
+MCP 2.2.0 保留 25 项工具：2 项 Skill 读取、5 项上传/审查、7 项清单、4 项分组、7 项规则接口。业务工具说明指向对应的 Skill 读取入口，状态和详情每次查询一次，列表每次读取一页；后续调用由宿主按 Skill 安排。
+
+## release 业务基线
+
+Skill 2.2.0 对齐 [everyline-cli release v1.1.1](https://github.com/qfeius/everyline-cli/tree/617a2cc47aa208cbc651412003b763afe4c55c41/skills)，固定来源提交 `617a2cc47aa208cbc651412003b763afe4c55c41`。完整保留业务规则，CLI 安装、命令调用和本地身份管理转换为连接器工具发现、结构化 arguments 与 OAuth。
+
+| 原版业务要求 | MCP Skill 中的落实 |
+| --- | --- |
+| 主体 → 强度 → 清单，按宿主能力选择交互 | 保留顺序、已有选择复用、完整候选冻结、内置编号 0、多选去重和无效回复整次重选；清单始终完整文字展示 |
+| 平台风险卡片与四级等级 | 排除主体风险，未知等级计入总数并单独说明，四级包含零值；结果缺失或截断不输出汇总 |
+| 固定完整报告与图表 | 基础信息表、概览、问题归纳、静态环形图和横向条形图、完整签名链接及两小时提示；保留图形尺寸、标签间距、占比与文字降级规则 |
+| 单项配置维护 | 保留清单、规则、分组的查询、创建、编辑和删除步骤，完整集合、3000/1500 字限制、变更确认、影响复查和写后回读 |
+| 调用与结果适配 | 参数位于顶层，长 ID 用字符串，强度和风险等级转换为工具枚举，状态查询与详情分别核对，缺少原子能力时按原版门槛停止相关写入 |
+
+基线测试使用固定 release 的独立原文片段；维护时只允许明确的调用词替换，报告全文保持连续一致。源工程测试保护业务要求，Chart SDK 测试保护完整正文分发；两者均不替代宿主实际执行与图表渲染验收。
 
 ## 宿主加载与调用
 
@@ -27,6 +41,7 @@ MCP 2.1.0 发布 25 项工具：2 项 Skill 读取、5 项上传/审查、7 项�
 - 在“插件 · 技能 · 伙伴 → 管理 → 技能”中，将个人 EveryLine MCP 技能替换为当前发布版。发布 Chart 只更新连接器返回的正文，已有个人 Skill 不会自动升级；2.0.0 的说明仅匹配文件 URL，2.1.0 才覆盖附件和通用“审查合同”入口。
 - 将 EveryLine 设为默认审查流程时，停用豆包推荐的“合同审查”（`doubao-contract-reviewer`），并停用旧 CLI 与重复来源的同名审查技能，保留当前 MCP 版。内置技能要求通用合同请求优先使用自身流程，只有 MCP 工具可见并不会改变这个选择。
 - 连接器工具仍为旧清单时，关闭再启用该连接器，核对两个读取入口和 25 项工具。用新任务检查首个审查步骤是否实际调用 `read-review-skill`；已有任务中加载的内置技能不作为新配置的验收依据。
+- EveryLine 登录、授权和重新连接由 `everyline-review` 的选路描述接入。宿主同时安装通用 `auth` 时，将其范围限定为用户明确指定的 Contract CLI；已选定 `everyline-cli-mcp-test` 后的“test 授权登录”进入该连接器 OAuth。更新个人 Skill 后新建任务，旧任务中的已加载正文不用于验收新规则。
 
 业务参数直接放在 arguments 顶层，例如上传传 `{"fileUrl":"https://example.com/contract.pdf","name":"contract.pdf"}`，无筛选条件传 `{}`。Higress 按参数逐项展示注释；`config`、`data` 和数组保留业务结构。文件、任务与资源 ID 按字符串传递。Skill 读取工具不接受业务参数，也没有一键审查或等待结果工具。
 
@@ -40,12 +55,14 @@ Chart 使用现有 `/api/public/verify-access-token` 验真，失败关闭访问
 
 用户授权、刷新与撤销由连接器完成，本工程不提供本地 Token 存储或登录命令。部署后仍需验证实际宿主的登录、刷新、撤销和双账号权限范围；本地映射检查不代替真实授权验收。
 
+仅请求授权时使用宿主的连接器授权入口；宿主没有可调用的授权操作时，提示在目标连接器设置中授权或重新连接。已连接则复用；可通过 `read-review-skill` 验证访问，不创建业务任务。授权入口缺失、工具未加载或 HTTP 401 都不触发 `contract-cli` 或旧 EveryLine CLI。仅修改 MCP 返回的正文不足以修复授权前的选路，须同步宿主 Skill 的描述及旧 `auth` 的适用范围。
+
 ## 版本与发布
 
 `mcp/skills-manifest.json` 记录 Skill 版本、名称与正文 SHA-256，两项 Skill 的 `metadata.version` 与清单一致。显式导出后，Chart 内发布副本按身份、版本与摘要校验，再编码为固定工具响应；修改流程后需重新导出并部署完整 Chart。`package.json` 为私有维护工具清单，不注册业务命令或安装钩子。
 
 ```sh
-node scripts/sync-mcp-skills.js --version 2.1.0
+node scripts/sync-mcp-skills.js --version 2.2.0
 node scripts/sync-mcp-skills.js --export-chart ../test-contract-charts/everyline-cli-mcp-test
 make mcp-check
 make mcp-package
@@ -53,13 +70,15 @@ make mcp-package
 
 上例版本替换为本次 Skill 版本。打包需要 Node.js、tar 和 zip。`make mcp-package` 生成以下文件及各自的 `.sha256`：
 
-- `dist/everyline-mcp-skills-2.1.0.tgz`：两项 Skill、清单、说明和独立校验/打包脚本。
-- `dist/everyline-review-mcp-skill-2.1.0.zip`：审查 Skill，ZIP 根目录为 `SKILL.md`。
-- `dist/everyline-review-config-mcp-skill-2.1.0.zip`：配置 Skill，ZIP 根目录为 `SKILL.md`。
+- `dist/everyline-mcp-skills-2.2.0.tgz`：两项 Skill、清单、说明和独立校验/打包脚本。
+- `dist/everyline-review-mcp-skill-2.2.0.zip`：审查 Skill，ZIP 根目录为 `SKILL.md`。
+- `dist/everyline-review-config-mcp-skill-2.2.0.zip`：配置 Skill，ZIP 根目录为 `SKILL.md`。
 
-核对发布文件摘要后，ZIP 可直接交给宿主导入。使用源归档时，解压后执行 `node scripts/sync-mcp-skills.js --check` 验证正文；也可用自带脚本重新生成导入包。`make release-check`、GitHub 发布与 GitLab 打包均校验并交付这些独立制品。发布标签通过 `node scripts/sync-mcp-skills.js --check-tag v2.1.0` 核对，并须匹配清单版本。CI 只发布 Skill 制品。
+核对发布文件摘要后，ZIP 可直接交给宿主导入。使用源归档时，解压后执行 `node scripts/sync-mcp-skills.js --check` 验证正文；也可用自带脚本重新生成导入包。`make release-check`、GitHub 发布与 GitLab 打包均校验并交付这些独立制品。发布标签通过 `node scripts/sync-mcp-skills.js --check-tag v2.2.0` 核对，并须匹配清单版本。CI 只发布 Skill 制品。
 
 Skill / MCP 2.1.0 增加连接器技能读取，保留附件审查入口及立场/强度/规则来源的用户选择条件。业务参数继续兼容 MCP 2.0.0，既有后端 API 保持不变。
+
+Skill / MCP 2.2.0 恢复 release 原版业务流程，配套 Chart 0.7.0。导出的两项 Skill 与源文件逐字一致，23 项业务工具的接口与参数保持兼容。批量工具仍注册，配置 Skill 沿用 release 的单项流程，不调用批量创建、更新或删除。
 
 ## 从 input 包装迁移到独立参数
 

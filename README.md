@@ -20,6 +20,8 @@ test MCP 的 2 项技能读取工具、23 项业务工具、OAuth 与部署配�
 
 审查流程由 Skill 安排：URL 上传 → 提取并选择主体 → 选择强度和规则来源 → 发起任务 → 查询状态 → 获取详情并展示结果。已有任务从原 `taskId` 继续。当前文件入口要求后端可访问的 HTTP/HTTPS URL。
 
+Skill 2.2.0 以 [everyline-cli release v1.1.1](https://github.com/qfeius/everyline-cli/tree/617a2cc47aa208cbc651412003b763afe4c55c41/skills) 为业务基线，恢复完整编号交互、平台风险统计口径、报告模板、静态 HTML/SVG 图表和配置维护流程。仅适配 MCP 调用、返回结构、附件传输及连接器授权；后续维护保留这些业务要求，发布测试独立检查固定 release 原文，避免正文精简后重新计算摘要就通过校验。
+
 ## 校验与打包
 
 本地维护需要 Node.js 18+、Git、tar、zip、unzip 和 make。
@@ -33,7 +35,7 @@ make release-check
 修改 Skill 后更新独立版本及摘要：
 
 ```sh
-node scripts/sync-mcp-skills.js --version 2.1.0
+node scripts/sync-mcp-skills.js --version 2.2.0
 node scripts/sync-mcp-skills.js --export-chart ../test-contract-charts/everyline-cli-mcp-test
 make release-check
 ```
