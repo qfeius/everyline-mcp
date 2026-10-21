@@ -1,11 +1,11 @@
 # 架构
 
-当前唯一业务调用链为 **用户 → 宿主 Agent 按 Skill 编排 → MCP → EveryLine API**。MCP 替代 CLI 的接口层，工程中已移除 CLI 实现及发布链路。
+当前调用链为 **用户 → 宿主 Agent 调用 MCP 读取 EveryLine Skill → 按 Skill 调用 MCP → EveryLine API**。MCP 替代 CLI 的接口层并提供部署版本的技能正文，工程中已移除 CLI 实现及发布链路。
 
 ```text
 用户目标
    ↓
-宿主 Agent 加载 Skill
+宿主 Agent 调用 MCP 的 read-review-skill / read-review-config-skill
 （交互、选择、分页、轮询、续办、写后回读、结果展示）
    ↓ 调用
 MCP / Higress
@@ -17,17 +17,19 @@ EveryLine API
 
 ## 模块职责
 
-`mcp/skills/` 定义两项宿主 Skill：`everyline-review` 编排审查，`everyline-review-config` 编排清单、分组和规则维护。宿主 Agent 执行这些规则并保存本次流程的文件标识、任务 ID、用户选择和进度。
+`mcp/skills/` 是两项 Skill 的唯一维护源：`everyline-review` 编排审查，`everyline-review-config` 编排清单、分组和规则维护。相同发布正文用于宿主 ZIP 和 MCP 读取工具，宿主 Agent 执行规则并保存文件标识、任务 ID、用户选择和进度。
 
-`dev-contract-charts/everyline-cli-mcp/` 承载 23 项 MCP 业务工具。每个工具映射一个现有接口：列表读取一页，状态与详情查询一次，写入提交一次。调用顺序、等待间隔、结果完整性检查和汇总策略均由 Skill 安排。
+`test-contract-charts/everyline-cli-mcp-test/` 承载 2 项 Skill 读取工具及 23 项业务工具。读取工具从网关直接返回完整正文，不请求业务后端；业务工具每次映射一个现有接口。调用顺序、等待间隔、结果完整性检查和汇总策略均由 Skill 安排。
 
-连接器负责用户 OAuth；Higress 验真当前用户 Token 并逐请求透传。业务后端执行其权限和数据规则。MCP 配置不持有共用用户凭据，也不分发 Skill 正文。
+连接器负责用户 OAuth；Higress 验真当前用户 Token 并逐请求透传。业务后端执行其权限和数据规则。Skill 读取沿用同一入口鉴权，正文编码为固定字符串，不使用请求可覆盖的 `server.config`。
 
 ## 代码与发布
 
 本工程只保留宿主 Skill、接口说明及维护脚本。原 Go CLI、命令处理器、Workflow、Profile、本地 Token 存储、安装器、自更新和二进制/npm 发布链路均已移除。Node 脚本用于开发时校验与打包，不参与用户业务调用。
 
-Skill 的唯一发布版本位于 `mcp/skills-manifest.json`，两份 `SKILL.md` 的版本与摘要须一致。Skill 以源归档和宿主导入 ZIP 独立发布，Chart 单独发布业务接口与鉴权配置。流程文案变更只更新 Skill；接口契约变更时协调两层版本并刷新宿主工具清单。
+Skill 的唯一发布版本位于 `mcp/skills-manifest.json`，两份 `SKILL.md` 的版本与摘要须一致。`--export-chart` 将校验后的正文及清单导出到独立 Chart；Helm 检查身份、版本和 SHA-256 后注入工具响应。修改流程后重新导出并部署 Chart，避免仅更新 ZIP 而连接器仍提供旧流程。
+
+MCP 提供可发现的技能入口和使用说明，实际选路与调用由宿主 Agent 执行。当前 Higress SDK 的初始化响应没有 `instructions`，因此不能把仅修改 `server.description` 当作已向模型注入流程。验收须确认宿主确实发现并调用 Skill 读取工具及业务工具；本地校验不代表集群已部署或宿主已选择本连接器。
 
 ## 接口约束
 

@@ -1,6 +1,6 @@
 # EveryLine MCP 与 Skill
 
-本工程采用 **宿主 Agent 加载 Skill → MCP 业务接口 → EveryLine API**。Skill 负责编排，MCP 替代原来的 CLI 接口层。
+本工程采用 **宿主 Agent 调用 MCP 读取 EveryLine Skill → 按 Skill 调用 MCP 业务接口 → EveryLine API**。Skill 负责编排，MCP 提供技能及原 CLI 对应的业务接口。
 
 ## 工程组成
 
@@ -10,13 +10,13 @@
 - `tests/release/`：Skill 发布制品回归测试。
 - `docs/`：分层、接口映射与验证说明。
 
-MCP 的 23 项业务工具、OAuth 与部署配置维护在 `dev-contract-charts/everyline-cli-mcp/` Chart。宿主直接调用该 MCP 入口；本工程已移除 CLI 命令、Go 运行时、本地授权和 Profile、安装器及二进制/npm 发布流程。`package.json` 仅用于运行维护脚本，并标记为私有。仓库目录及连接器沿用 `everyline-cli-mcp` 名称，名称不代表存在 CLI 运行层。
+test MCP 的 2 项技能读取工具、23 项业务工具、OAuth 与部署配置维护在 `test-contract-charts/everyline-cli-mcp-test/` Chart。宿主直接调用该 MCP 入口；本工程已移除 CLI 命令、Go 运行时、本地授权和 Profile、安装器及二进制/npm 发布流程。`package.json` 仅用于运行维护脚本，并标记为私有。仓库目录及连接器沿用 `everyline-cli-mcp` 名称，名称不代表存在 CLI 运行层。
 
 ## 使用流程
 
 1. 在宿主添加 EveryLine HTTP MCP 连接器并完成 OAuth 授权。
-2. 导入 `everyline-review` 和 `everyline-review-config` 两项 Skill ZIP，或安装对应 Skill 目录。
-3. 用户提出审查或配置维护需求，宿主 Agent 按 Skill 调用 MCP 接口。
+2. 刷新 MCP 工具清单；审查入口为 `read-review-skill`，配置维护入口为 `read-review-config-skill`。宿主 Skill ZIP 可辅助选路，完整流程由连接器返回。
+3. 用户提出审查或配置维护需求，宿主先从 MCP 读取对应 Skill，再按流程调用同一连接器的业务接口。
 
 审查流程由 Skill 安排：URL 上传 → 提取并选择主体 → 选择强度和规则来源 → 发起任务 → 查询状态 → 获取详情并展示结果。已有任务从原 `taskId` 继续。当前文件入口要求后端可访问的 HTTP/HTTPS URL。
 
@@ -33,10 +33,11 @@ make release-check
 修改 Skill 后更新独立版本及摘要：
 
 ```sh
-node scripts/sync-mcp-skills.js --version 2.0.0
+node scripts/sync-mcp-skills.js --version 2.1.0
+node scripts/sync-mcp-skills.js --export-chart ../test-contract-charts/everyline-cli-mcp-test
 make release-check
 ```
 
-将示例版本替换为本次新版本。GitLab 校验并产出 Skill 制品；GitHub 仅对与清单一致的 `v<版本>` 标签发布 Skill 制品。发布过程不生成或安装业务命令。
+将示例版本替换为本次新版本。显式导出把同一发布正文及摘要写入 Chart，Chart 部署前校验一致性；更新后部署完整 Chart 并刷新 MCP 工具。GitLab 校验并产出 Skill 制品；GitHub 仅对与清单一致的 `v<版本>` 标签发布 Skill 制品。发布过程不生成或安装业务命令。
 
 详细说明：[架构](docs/architecture.md)、[接口映射](docs/api-mapping.md)、[宿主接入与迁移](mcp/README.md)、[测试计划](docs/test-plan.md)。历史 CLI 实现保留在 Git 历史，原 `everyline-cli` 工程独立维护。

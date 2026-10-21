@@ -1,6 +1,6 @@
 # MCP 接口映射
 
-MCP 业务工具由 `dev-contract-charts/everyline-cli-mcp/files/mcp-config.yaml` 定义，直接请求现有 EveryLine API。业务基址由 Chart 配置；每项工具只调用下表对应接口。OAuth 由连接器负责。
+test MCP 工具由 `test-contract-charts/everyline-cli-mcp-test/files/mcp-config.yaml` 定义。审查前调用 `read-review-skill`，维护配置前调用 `read-review-config-skill`；两项工具均以 `{}` 调用，由网关直接返回已校验的完整 Skill 正文。随后业务工具请求下表对应的 EveryLine API，OAuth 由连接器负责。
 
 | MCP 工具 | 方法 | 路径 |
 | --- | --- | --- |
