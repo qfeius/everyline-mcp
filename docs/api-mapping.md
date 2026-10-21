@@ -1,49 +1,41 @@
-# API 映射
+# MCP 接口映射
 
-基础 URL 来自 Profile。下表路径均为 CLI HTTP Adapter 中的相对路径。
+MCP 业务工具由 `dev-contract-charts/everyline-cli-mcp/files/mcp-config.yaml` 定义，直接请求现有 EveryLine API。业务基址由 Chart 配置；每项工具只调用下表对应接口。OAuth 由连接器负责。
 
-四个批量创建/更新 operation 均已核验并支持真实调用；请求体使用对应的 Checklist[] 或 Rule[]，批量更新数组中的每项必须包含 `id`。`--dry-run`/`--print-input` 仍可用于本地预览，不发送 HTTP 请求。
+| MCP 工具 | 方法 | 路径 |
+| --- | --- | --- |
+| `upload-contract-file-by-url` | `POST` | `/open-apis/contract-review/v3/file/contract/uploadByUrl` |
+| `extract-contract-subjects` | `POST` | `/open-apis/contract-review/v3/smartAudit/contract/subjects` |
+| `start-review-task` | `POST` | `/open-apis/contract-review/v3/smartAudit/task/startReview` |
+| `get-review-task-status` | `GET` | `/open-apis/contract-review/v3/smartAudit/task/status` |
+| `get-review-task-info` | `GET` | `/open-apis/contract-review/v3/smartAudit/task/info` |
+| `create-review-checklist` | `POST` | `/open-apis/review-rules/review-checklists` |
+| `batch-create-review-checklists` | `POST` | `/open-apis/review-rules/review-checklists/batch` |
+| `list-review-checklists` | `GET` | `/open-apis/review-rules/review-checklists` |
+| `update-review-checklist` | `PUT` | `/open-apis/review-rules/review-checklists/{id}` |
+| `batch-update-review-checklists` | `PUT` | `/open-apis/review-rules/review-checklists/batch` |
+| `delete-review-checklist` | `DELETE` | `/open-apis/review-rules/review-checklists/{id}` |
+| `batch-delete-review-checklists` | `DELETE` | `/open-apis/review-rules/review-checklists/batch` |
+| `create-review-rule-group` | `POST` | `/open-apis/review-rules/review-rule-groups` |
+| `list-review-rule-groups` | `GET` | `/open-apis/review-rules/review-rule-groups` |
+| `update-review-rule-group` | `PUT` | `/open-apis/review-rules/review-rule-groups/{id}` |
+| `delete-review-rule-group` | `DELETE` | `/open-apis/review-rules/review-rule-groups/{id}` |
+| `create-review-rule` | `POST` | `/open-apis/review-rules/review-rule-groups/{groupId}/rules` |
+| `batch-create-review-rules` | `POST` | `/open-apis/review-rules/review-rule-groups/{groupId}/rules/batch` |
+| `list-review-rules` | `GET` | `/open-apis/review-rules/review-rule-groups/{groupId}/rules` |
+| `update-review-rule` | `PUT` | `/open-apis/review-rules/review-rule-groups/{groupId}/rules/{ruleId}` |
+| `batch-update-review-rules` | `PUT` | `/open-apis/review-rules/review-rule-groups/{groupId}/rules/batch` |
+| `delete-review-rule` | `DELETE` | `/open-apis/review-rules/review-rule-groups/{groupId}/rules/{ruleId}` |
+| `batch-delete-review-rules` | `DELETE` | `/open-apis/review-rules/review-rule-groups/{groupId}/rules/batch` |
 
-| Operation ID | CLI 命令 | 方法与路径 |
-|---|---|---|
-| `tenantAccessTokenInternal` | `auth login` | `POST profile.token_url` |
-| `uploadContractFileV3` | `review file upload` | `POST /open-apis/contract-review/v3/file/contract/upload` |
-| `uploadContractFileByURLV3` | `review file upload-url` | `POST /open-apis/contract-review/v3/file/contract/uploadByUrl` |
-| `smartAuditContractSubjects` | `review subject extract` | `POST /open-apis/contract-review/v3/smartAudit/contract/subjects` |
-| `smartAuditTaskStartReview` | `review task start` | `POST /open-apis/contract-review/v3/smartAudit/task/startReview` |
-| `smartAuditTaskStatus` | `review task status` | `GET /open-apis/contract-review/v3/smartAudit/task/status` |
-| `smartAuditTaskInfo` | `review task info` | `GET /open-apis/contract-review/v3/smartAudit/task/info` |
-| `createReviewChecklist` | `checklist create` | `POST /open-apis/review-rules/review-checklists` |
-| `batchCreateReviewChecklists` | `checklist batch-create` | `POST /open-apis/review-rules/review-checklists/batch` |
-| `listReviewChecklists` | `checklist list` | `GET /open-apis/review-rules/review-checklists` |
-| `updateReviewChecklist` | `checklist update` | `PUT /open-apis/review-rules/review-checklists/{id}` |
-| `batchUpdateReviewChecklists` | `checklist batch-update` | `PUT /open-apis/review-rules/review-checklists/batch` |
-| `deleteReviewChecklist` | `checklist delete` | `DELETE /open-apis/review-rules/review-checklists/{id}` |
-| `batchDeleteReviewChecklists` | `checklist batch-delete` | `DELETE /open-apis/review-rules/review-checklists/batch` |
-| `createReviewRuleGroup` | `rule group create` | `POST /open-apis/review-rules/review-rule-groups` |
-| `listReviewRuleGroups` | `rule group list` | `GET /open-apis/review-rules/review-rule-groups` |
-| `updateReviewRuleGroup` | `rule group update` | `PUT /open-apis/review-rules/review-rule-groups/{id}` |
-| `deleteReviewRuleGroup` | `rule group delete` | `DELETE /open-apis/review-rules/review-rule-groups/{id}` |
-| `createReviewRule` | `rule create` | `POST /open-apis/review-rules/review-rule-groups/{groupId}/rules` |
-| `batchCreateReviewRules` | `rule batch-create` | `POST /open-apis/review-rules/review-rule-groups/{groupId}/rules/batch` |
-| `listReviewRules` | `rule list` | `GET /open-apis/review-rules/review-rule-groups/{groupId}/rules` |
-| `updateReviewRule` | `rule update` | `PUT /open-apis/review-rules/review-rule-groups/{groupId}/rules/{ruleId}` |
-| `batchUpdateReviewRules` | `rule batch-update` | `PUT /open-apis/review-rules/review-rule-groups/{groupId}/rules/batch` |
-| `deleteReviewRule` | `rule delete` | `DELETE /open-apis/review-rules/review-rule-groups/{groupId}/rules/{ruleId}` |
-| `batchDeleteReviewRules` | `rule batch-delete` | `DELETE /open-apis/review-rules/review-rule-groups/{groupId}/rules/batch` |
+## 参数与结果
 
-普通业务接口以 `code=200` 为成功；token 接口以 `code=0` 为成功，两者不会共用固定成功码。
+所有参数放在 `input` 对象内，无筛选查询使用 `{"input":{}}`。文件、任务、清单、分组和规则 ID 按字符串传递。MCP 校验必填项、类型、已声明字段及组合约束，返回业务结果与错误原因。
 
-`review task result` 复用 `smartAuditTaskStatus` 做 CLI 侧轮询，并在成功后调用 `smartAuditTaskInfo` 获取最终详情，不单独计为远端 operation。文件快照接口属于 V3 文档能力，但按当前范围不纳入 CLI 清单，也不参与一键工作流。
+上传接收 `fileUrl` 与 `name`，返回后续审查所需的 `businessId`、`fileId`、`fileHash`。发起任务使用这些标识与 `config`；`config` 包含主体名称、角色、`reviewStrength=0/1/2`，以及非空自定义清单 ID 或 `matchContractTypeRulePackage=true`，两种规则来源支持组合。用量字段沿用既有后端计量值 `everyLine_100_openApi_cli`，由请求映射固定注入；该字段名称是后端契约，不表示运行 CLI。
 
-批量删除命令对外仍接受重复 `--id` 或 JSON ID 数组，但 HTTP 请求体统一包装为 `{"ids":[...]}`，以匹配平台批量删除接口契约。
+状态和详情查询使用 `taskId`；选择 `visibilityScope=contractResult` 时还需 `businessId`。状态每次查询一次，任务成功后是否调用详情由 Skill 安排。
 
-任务 `status/info/result` 查询默认只要求 `taskId`；使用 `visibilityScope=contractResult` 时，当前服务端兼容契约只要求 `businessId`，不再要求 `appType`。CLI 已移除 `--app-type`，查询请求不会自动补入 appType。
+配置单项创建/更新使用 `data`，批量创建/更新使用非空 `items`，批量更新每项带 `id`；批量删除使用无重复的非空 `ids`。清单创建/更新需要 `name` 和完整 `reviewRuleIds`，接口同时写入默认启用状态、阶段与分类。规则需要 `name`、`riskLevel`、`content`，可附 `riskTips`。详细约束以实际工具 Schema 为准。
 
-`review task start` 与 `review run` 的调用方输入只保留 `businessId`、`fileId`、`fileHash` 和 `config`；`config` 必须包含 `selectedPosition`、`selectedAuditRole`、`reviewStrength`，其中 CLI 推荐“弱势/中立/强势”并兼容旧版 `0/1/2`，HTTP 边界统一转换为 `0/1/2`。非空 `selectedCheckListIds` 或 `matchContractTypeRulePackage=true` 至少满足一项，两项同时提供时组合执行。在调用 `smartAuditTaskStartReview` 的 HTTP 边界，CLI 固定补入 `usageReportContext.reportBusinessCode=everyLine_100_openApi_cli`，该字段不接受输入或 Profile 覆盖。`fileHash` 使用上传接口返回的文件指纹；CLI 不接收文档中其他非必填字段，未知字段会在 JSON 解码阶段拒绝。`fileId` 本次仍保持 CLI 当前输入和内部类型行为，不纳入字符串化改造。`review subject extract` 的 `fileHash` 仍按文档作为可选链路追踪字段透传。
-
-`review run` 的数据流为：上传 -> 可选主体提取 -> 发起 -> 可选轮询 -> 详情。文件上传响应提供 `businessId/fileId/fileHash`；标准 URL 上传接口只返回文件 ID，因此 URL 来源需要在 RunSpec 中额外提供 `businessId` 和上传接口返回的 `fileHash`。
-
-清单创建与更新请求按公开接口说明要求 `name`、`reviewRuleIds`；`contractCategory`、`reviewStage` 为可选兼容字段。
-
-规则分组删除的级联语义由接口固定，CLI 的 dry-run 只展示路径中的 `id`，不会虚构 `cascade` 请求参数。
+业务成功码为 `200`。业务成功、任务完成、结果明细完整分别核对；MCP 返回单次接口数据，分页、轮询、续办与汇总由宿主 Skill 执行。

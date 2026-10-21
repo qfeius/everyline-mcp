@@ -1,7 +1,7 @@
 {
   "name": "@qfeius/everyline-cli-mcp",
-  "version": "1.1.1",
-  "description": "EveryLine CLI MCP 工具的 npm/npx 薄包装",
+  "private": true,
+  "description": "EveryLine MCP 宿主 Skill 的校验与发布工具",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
@@ -11,41 +11,12 @@
   "bugs": {
     "url": "https://git.qtech.cn/ai/everyline-cli-mcp/-/issues"
   },
-  "bin": {
-    "everyline-cli-mcp": "scripts/run.js"
-  },
-  "files": [
-    "bin/checksums.txt",
-    "bin/darwin-amd64/",
-    "bin/darwin-arm64/",
-    "bin/linux-amd64/",
-    "bin/linux-arm64/",
-    "bin/windows-amd64/",
-    "bin/windows-arm64/",
-    "docs/npm-release.md",
-    "docs/everyline-cli-mcp-skill-guide.md",
-    "docs/everyline-cli-mcp-skill-interaction-scenarios.md",
-    "scripts/install.js",
-    "scripts/doubao-skills.js",
-    "scripts/package-version.js",
-    "scripts/platform.js",
-    "scripts/run.js",
-    "scripts/verify-package-version.js",
-    "scripts/sync-skill-versions.js",
-    "skills/"
-  ],
   "scripts": {
-    "postinstall": "node scripts/install.js",
-    "prepack": "node scripts/verify-package-version.js && node scripts/sync-skill-versions.js",
-    "prepublishOnly": "node scripts/verify-package-version.js --publish",
-    "test": "node --test tests/release/*.test.js"
+    "test": "node --test tests/release/*.test.js",
+    "check": "node scripts/sync-mcp-skills.js --check",
+    "package": "node scripts/sync-mcp-skills.js --package dist"
   },
   "engines": {
     "node": ">=18"
-  },
-  "publishConfig": {
-    "registry": "https://registry.npmjs.org/",
-    "access": "public",
-    "tag": "latest"
   }
 }
