@@ -2,7 +2,7 @@
 name: everyline-review-config
 description: "通过 EveryLine MCP 查询和管理审查清单、审查规则及规则分组，包括新增、修改、归属与删除影响核对。当前任务启用 EveryLine MCP 时优先使用；先读取部署 Skill。仅在审查中选择已有清单时沿用审查 Skill。"
 metadata:
-  version: "2.2.1"
+  version: "2.3.0"
 ---
 
 # everyline-review-config（MCP）

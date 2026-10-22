@@ -19,9 +19,9 @@ EveryLine API
 
 `mcp/skills/` 是两项 Skill 的唯一维护源：`everyline-review` 编排审查，`everyline-review-config` 编排清单、分组和规则维护。相同发布正文用于宿主 ZIP 和 MCP 读取工具，宿主 Agent 执行规则并保存文件标识、任务 ID、用户选择和进度。
 
-`test-contract-charts/everyline-cli-mcp-test/` 承载 2 项 Skill 读取工具及 23 项业务工具。读取工具从网关直接返回完整正文，不请求业务后端；业务工具每次映射一个现有接口。调用顺序、等待间隔、结果完整性检查和汇总策略均由 Skill 安排。
+`test-contract-charts/everyline-cli-mcp-test/` 承载 2 项 Skill 读取工具、23 项业务工具及 `auth-logout`。读取工具从网关直接返回完整正文，不请求业务后端；业务工具每次映射一个现有接口。调用顺序、等待间隔、结果完整性检查和汇总策略均由 Skill 安排。
 
-连接器负责用户 OAuth；Higress 验真当前用户 Token 并逐请求透传。业务后端执行其权限和数据规则。Skill 读取沿用同一入口鉴权，正文编码为固定字符串，不使用请求可覆盖的 `server.config`。
+连接器负责用户 OAuth 登录和刷新；`auth-logout` 通过既有网关路由调用组织服务退出接口，撤销当前授权并阻断该授权的访问与续期。Higress 验真当前用户 Token 并逐请求透传。业务后端执行其权限和数据规则。Skill 读取沿用同一入口鉴权，正文编码为固定字符串，不使用请求可覆盖的 `server.config`。
 
 ## 代码与发布
 

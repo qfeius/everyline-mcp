@@ -10,7 +10,7 @@
 - `tests/release/`：Skill 发布制品回归测试。
 - `docs/`：分层、接口映射与验证说明。
 
-test MCP 的 2 项技能读取工具、23 项业务工具、OAuth 与部署配置维护在 `test-contract-charts/everyline-cli-mcp-test/` Chart。宿主直接调用该 MCP 入口；本工程已移除 CLI 命令、Go 运行时、本地授权和 Profile、安装器及二进制/npm 发布流程。`package.json` 仅用于运行维护脚本，并标记为私有。仓库目录及连接器沿用 `everyline-cli-mcp` 名称，名称不代表存在 CLI 运行层。
+test MCP 的 2 项技能读取工具、23 项业务工具、1 项退出工具、OAuth 与部署配置维护在 `test-contract-charts/everyline-cli-mcp-test/` Chart。宿主直接调用该 MCP 入口；本工程已移除 CLI 命令、Go 运行时、本地授权和 Profile、安装器及二进制/npm 发布流程。`package.json` 仅用于运行维护脚本，并标记为私有。仓库目录及连接器沿用 `everyline-cli-mcp` 名称，名称不代表存在 CLI 运行层。
 
 ## 使用流程
 
@@ -18,9 +18,11 @@ test MCP 的 2 项技能读取工具、23 项业务工具、OAuth 与部署配�
 2. 刷新 MCP 工具清单；审查入口为 `read-review-skill`，配置维护入口为 `read-review-config-skill`。宿主 Skill ZIP 可辅助选路，完整流程由连接器返回。
 3. 用户提出审查或配置维护需求，宿主先从 MCP 读取对应 Skill，再按流程调用同一连接器的业务接口。
 
+用户明确要求退出时，宿主以 `{}` 调用 `auth-logout`，成功后停止业务请求和自动重连；再次登录或切换账号使用宿主 OAuth。直接退出需要配套组织服务，升级前签发的旧授权须重新连接一次。
+
 审查流程由 Skill 安排：URL 上传 → 提取并选择主体 → 选择强度和规则来源 → 发起任务 → 查询状态 → 获取详情并展示结果。已有任务从原 `taskId` 继续。当前文件入口要求后端可访问的 HTTP/HTTPS URL。
 
-Skill 2.2.1 以 [everyline-cli release v1.1.1](https://github.com/qfeius/everyline-cli/tree/617a2cc47aa208cbc651412003b763afe4c55c41/skills) 为业务基线，保留完整编号交互、平台风险统计口径、报告模板和配置维护流程。图表优先使用宿主原生可视化，其次用程序生成并嵌入 PNG，展示失败时降级为文字，不输出 HTML/SVG 源码。发布测试独立检查固定 release 原文，仅显式适配 MCP 调用与宿主图表展示方式，继续保护统计、布局和签名链接规则。
+Skill 2.3.0 以 [everyline-cli release v1.1.1](https://github.com/qfeius/everyline-cli/tree/617a2cc47aa208cbc651412003b763afe4c55c41/skills) 为业务基线，保留完整编号交互、平台风险统计口径、报告模板和配置维护流程。图表优先使用宿主原生可视化，缺失或失败后实际尝试生成并嵌入 PNG；豆包补齐运行时检查与图片交付步骤，两条路径均有具体缺项或失败记录时才降级为文字，不输出 HTML/SVG 源码。发布测试独立检查固定 release 原文，仅显式适配 MCP 调用与宿主图表展示方式，继续保护统计、布局和签名链接规则。
 
 ## 校验与打包
 
@@ -35,7 +37,7 @@ make release-check
 修改 Skill 后更新独立版本及摘要：
 
 ```sh
-node scripts/sync-mcp-skills.js --version 2.2.1
+node scripts/sync-mcp-skills.js --version 2.3.0
 node scripts/sync-mcp-skills.js --export-chart ../test-contract-charts/everyline-cli-mcp-test
 make release-check
 ```
