@@ -4,7 +4,6 @@ test MCP 工具由 `test-contract-charts/everyline-cli-mcp-test/files/mcp-config
 
 | MCP 工具 | 方法 | 路径 |
 | --- | --- | --- |
-| `auth-logout` | `POST` | `/api/oauth/public/oauth/logout/contract-review`（网关转发至组织服务 `/api/public/oauth/logout/contract-review`） |
 | `upload-contract-file-by-url` | `POST` | `/open-apis/contract-review/v3/file/contract/uploadByUrl` |
 | `extract-contract-subjects` | `POST` | `/open-apis/contract-review/v3/smartAudit/contract/subjects` |
 | `start-review-task` | `POST` | `/open-apis/contract-review/v3/smartAudit/task/startReview` |
@@ -41,4 +40,4 @@ MCP 2.0.0 的业务参数直接放在 arguments 顶层，例如上传传 `{"file
 
 业务成功码为 `200`。业务成功、任务完成、结果明细完整分别核对；MCP 返回单次接口数据，分页、轮询、续办与汇总由宿主 Skill 执行。
 
-`auth-logout` 无业务参数，以 `{}` 调用；只透传当前请求的 Bearer，不接受账号、租户或 Token 参数。仅 `code=200` 且 `data.authenticated=false` 为退出成功。后端撤销当前签名授权关联的 refresh family，验真同步拒绝该授权的所有访问令牌；旧授权缺少关联返回 `409 reauthorization_required`，不扩大到同用户或同设备的其他连接。
+退出与切换账号不映射 MCP 工具或 HTTP 退出接口。宿主管理当前连接器的旧授权，切换账号再重新发起 OAuth；是否撤销后端令牌以宿主实际能力与返回结果为准。
