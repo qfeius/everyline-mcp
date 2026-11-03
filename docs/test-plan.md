@@ -1,5 +1,12 @@
 # 测试计划
 
+## 3.1.3 详情链接与大结果
+
+- 后端 Controller 输入超过 1 MB、含 46 张普通卡片和 1 张主体风险标记的确定性结果；缺省全量响应不变，`simplifyReviewResult=true` 响应小于 64 KB。链接原样保留，全部卡片、修改理由和建议保留，重复正文与坐标移除，长 ID 不舍入。
+- 后端覆盖成功缺链接、进行中、未知状态、真实空数组、原业务鉴权拒绝和 HTTP 参数校验；缺失或异常明细不能伪装为零风险。
+- Chart 0.10.2 / MCP 3.1.1 使用真实 Helm 渲染和 Higress SDK 验证固定请求报告视图，保持 25 项业务工具和 55 个顶层参数；响应模板保留后端的首字段链接、全部 query、卡片及主体风险标记，兼容旧全量响应和原错误码。
+- Skill 回归保护完整报告基线、先保存链接、同一任务上下文最多补查一次、超限停止重复读取及真实链接异常。按“后端 → test Chart → 宿主 Skill/工具刷新”发布，以原任务 `2092175373579065470` 只读验收，不重新创建审查。区分本地验证与实际宿主验收，记录实际响应字节数和链接是否显示。
+
 ## Skill 源工程
 
 维护环境需要 Node.js 18+、Git、tar、zip、unzip 和 make，执行：
@@ -8,7 +15,7 @@
 make release-check
 ```
 
-自动化覆盖 Skill 身份、版本、摘要、Git 换行行为、无效变更阻止发布、显式 Chart 导出及旧命令拒绝、发布标签匹配、源归档离线校验/重建、宿主 ZIP 根目录及正文一致性、重复打包清理旧条目。
+自动化覆盖 Skill 身份、版本、摘要、Git 换行行为、无效变更阻止发布、发布标签匹配、源归档离线校验/重建、宿主 ZIP 根目录及正文一致性、重复打包清理旧条目。
 
 `tests/release/fixtures/release-business-baseline.json` 摘录固定 release `617a2cc47aa208cbc651412003b763afe4c55c41` 的原版业务段落，记录来源和版本；期望值不从 MCP Skill 或 manifest 生成。`mcp-business-parity.test.js` 显式转换 CLI 调用词和 2.2.2 的宿主图表执行及降级条件，继续核对主体映射、完整编号交互、清单规则、配置流程及整段报告的统计、布局和链接原文。历史基线保持原样；更新摘要不会绕过基线检查，不从当前输出覆盖期望值。实际展示效果按下表验收。
 
@@ -25,19 +32,19 @@ helm template everyline-cli-mcp-test ./everyline-cli-mcp-test
 MCP_CONFIG_FILES=everyline-cli-mcp-test/files/mcp-config.yaml sh scripts/validate-changed-mcp-configs.sh
 ```
 
-Chart 从实际 Helm 输出编译入口参数 Schema，使用 request-validation 同版本校验引擎，再通过 Higress SDK 验证 2 项 Skill 读取工具与 23 项业务工具，共 25 项；确认旧 `auth-logout` 不再注册或暴露。读取测试验证正文逐字返回、拒绝额外参数、保留本地响应且请求头不覆盖发布内容；Helm 拒绝技能正文、身份与版本漂移。原 53 个业务顶层参数、请求路由、身份透传、长 ID、批量正文及错误响应继续回归。这里的 Go 是 Chart 测试依赖，与用户业务调用无关。
+Chart 从实际 Helm 输出编译入口参数 Schema，使用 request-validation 同版本校验引擎，再通过 Higress SDK 验证 25 项业务工具，确认两个旧 Skill 读取工具与 `auth-logout` 不再注册或暴露。55 个业务顶层参数、请求路由、身份透传、长 ID、批量正文及错误响应继续回归。这里的 Go 是 Chart 测试依赖，与用户业务调用无关。
 
 ## 宿主联调
 
 授权选路验收使用新任务和实际调用记录：
 
 - 明确使用 `everyline-cli-mcp-test` 登录，或已选定它后输入“test 授权登录”：进入宿主连接器 OAuth；宿主缺少授权操作时提示该连接器的设置入口。全程无 `contract-cli` / `everyline-cli-mcp` 命令、CLI 安装探测或通用 `auth` 读取。
-- 已连接时复用，HTTP 401 时恢复同一连接器授权，HTTP 403 时报告权限错误；均保持原连接器和任务上下文。仅登录请求可以读取 Skill 验证访问，不上传合同或创建任务。
+- 已连接时复用，HTTP 401 时恢复同一连接器授权，HTTP 403 时报告权限错误；均保持原连接器和任务上下文。仅登录请求使用宿主连接状态确认授权，不上传合同或创建任务。
 - 单独输入“test 授权登录”且没有产品上下文时先确认目标；用户明确请求 `contract-cli` 登录时仍由原 `auth` 处理，保留其既有能力。
 
-在测试环境验证宿主发现 25 项 MCP 工具并完成 OAuth；用户只提出“审查合同”时，应先调用 `read-review-skill`，再上传、选择主体/强度/清单，最后发起与查询任务。既有任务直接续办；配置操作先调用 `read-review-config-skill`。用户尚未选择强度或规则来源时，应停在该项选择步骤。记录真实工具调用、授权及附件可达性结果，本地静态和 SDK 验证不代替宿主联调。
+在测试环境验证宿主发现 25 项 MCP 业务工具并完成 OAuth；用户只提出“审查合同”时，宿主加载审查 Skill，再上传、选择主体/强度/清单，最后发起与查询任务。既有任务直接续办；配置操作加载配置 Skill。用户尚未选择强度或规则来源时，应停在该项选择步骤。记录真实工具调用、授权及附件可达性结果，本地静态和 SDK 验证不代替宿主联调。
 
-豆包验收分别记录工具发现和任务选路：25 项工具可见仅通过前一项。检查个人 Skill 版本、同名本地 Skill 及内置“合同审查”的启用状态后，以新任务的真实调用记录确认 `read-review-skill` 已返回；读取 `doubao-contract-reviewer` 或运行其预检脚本仍判定选路失败。只有用户明确给齐三项选择后才允许出现 `start-review-task`。附件只有本地路径时应停在文件传输条件检查，不能以本地解析生成报告代替 MCP 流程。
+豆包验收分别记录工具发现和任务选路：25 项业务工具可见仅通过前一项。检查个人 Skill 版本、同名本地 Skill 及内置“合同审查”的启用状态后，以新任务的真实记录确认宿主已加载审查 Skill；读取 `doubao-contract-reviewer` 或运行其预检脚本仍判定选路失败。只有用户明确给齐三项选择后才允许出现 `start-review-task`。附件只有本地路径时应停在文件传输条件检查，不能以本地解析生成报告代替 MCP 流程。
 
 2026-10-21 豆包现场验收：替换个人两项 Skill 为 2.1.0，停用内置合同审查、旧 CLI 和重复来源的审查技能后，新任务仅提交本地 DOCX 附件和“审查合同”。真实调用依次包含 `read-review-skill`、`upload-contract-file-by-url`、`extract-contract-subjects`、`list-review-checklists`；宿主使用 `FileBatchUpload` 为本地附件取得可访问 URL。界面展示 3 项确认卡片，分别选择立场、强度和清单；验收停在等待用户选择处，`start-review-task` 调用数为 0。本次通过默认选路、附件传输和三项选择展示验证，未执行正式审查及结果查询。
 
@@ -75,10 +82,32 @@ Chart 从实际 Helm 输出编译入口参数 Schema，使用 request-validation
 
 部署 Chart 0.9.0，同步更新两项个人 Skill 并刷新工具清单。该变更不依赖新增组织服务退出接口，不要求为移除工具暂停令牌签发或刷新。以下真实宿主场景在部署后验收，本地 SDK 测试不替代实测。
 
-- 工具清单为 25 项，旧 `auth-logout` 不再注册、发现或产生退出 HTTP 请求；两项技能读取与 23 项业务工具继续通过回归。
+- 工具清单为 27 项，旧 `auth-logout` 不再注册、发现或产生退出 HTTP 请求；两项技能读取与 25 项业务工具继续通过回归。
 - 用户要求退出 A 时立即停止其业务请求、轮询和自动恢复；使用宿主对目标连接器的授权管理能力。未暴露操作时引导至对应管理界面，不运行 CLI 或构造退出请求。
 - 按宿主实际结果区分“已断开连接”和“已撤销授权”，前者不推导出后端访问与刷新令牌均失效；操作取消、超时或失败时不报告退出成功。
 - 退出后不调用 Skill 或业务工具探测，不因 401 自动重新登录；仅在用户再次登录或已明确切换账号时进入宿主 OAuth。
 - 切换账号 A → B 时，先由宿主管理旧授权，再重新发起 OAuth。核对实际返回的用户、租户及受保护业务读取；浏览器复用 A 登录态时不误报已切换到 B。
 - 原任务保持创建时租户归属；切换后不在新租户下自动续办、重建任务或重放配置写入。恢复原身份和权限后继续原步骤。
 - 记录各目标宿主版本、真实操作结果及独立连接 B 的可用性；不将本地代码、工具不可见或宿主界面关闭描述为后端令牌撤销证据。
+
+
+## 3.1.0 原始文件上传会话
+
+- 使用宿主真实可读的 DOC/DOCX/PDF，按 prepare → multipart file → commit 调用；只有 commit 返回同次 businessId/fileId/fileHash 后才继续主体提取。
+- prepare 不产生文件；仅文件名、空文件、超过环境上限、未上传直接 commit、过期、跨用户/租户、并发及上传结果未知均须停止。重复提交和重复 content 不创建另一文件。
+- 会话的 `upload_headers` 为空，只向 prepare 真实返回且环境一致的地址发送原文件，不添加 Authorization。用户直接提供的外部完整 URL 仍可直接上传。
+- test/blue 各发现 27 项工具，55 个顶层参数，业务 Header 为 mcp；`start-review-task` 固定携带 `usageReportContext.reportBusinessCode=everyLine_100_openApi_mcp`；先发布后端与环境配置再部署 Chart。content 凭后端限时会话，prepare/commit 继续用户认证；原 MCP 上游保持现状。
+
+## 3.1.1 附件上传选路
+
+- 宿主可读取聊天附件或本地原文件且能发送 multipart 时，核对调用顺序为 prepare → content → commit；不调用 `FileBatchUpload` 生成合同 URL，也不调用 `upload-contract-file-by-url`，即使宿主同时提供附件 URL。
+- 宿主仅提供已存在的附件 URL 时，使用宿主读取同一附件原字节后执行三段上传；记录文件已位于宿主存储。缺少读取或 multipart 能力时说明缺项并停止，不自动回退 URL 上传。
+- 用户直接提供外部完整下载 URL 时，继续通过 `upload-contract-file-by-url` 上传。比较返回标识、主体提取及后续审查行为，确认既有入口可用。
+- 分别在 test 和 blue 发布 Chart 并刷新对应宿主 Skill、工具清单后，检查真实调用记录；本地规则测试不能代替目标宿主的文件与 HTTP 能力验收。
+- 后端实例完成切换后，验证 prepare 返回空头并使用无额外授权头的方式上传。
+
+## 后端上传会话验证
+
+三段上传使用完整 `/open-apis/contract-review/v3/mcp/files/upload_sessions/**`：核对真实应用已注册三个 POST，旧 `/open-api/v3/mcp/files/upload_sessions/**` 路径已移除。prepare 返回的 content URL 必须能直接命中新后端端点；认证精确范围、日志审计脱敏、原始 multipart 字节和长 ID 继续回归。开放平台验证三条 POST 保留路径、查询、方法与请求体，相邻接口仍使用原改写；test/blue MCP 使用各自开平域名。发布顺序为后端完整端点 → 开放平台转发 → MCP/Skill，回滚须配套恢复后端与开放平台。
+
+后端分支 `20261016-zss-everyline-mcp` 的 `test_mcp_file_upload_session_service.py` 使用隔离真实 Redis（需要 redis-server）验证归属、固定有效期、跨实例锁、原始文件字节、重复 content/commit、未知结果及缓存故障。`test_mcp_file_upload_controller.py` 验证真实 multipart 解析、长 ID、大小写规范及精确认证边界；相邻原上传、URL 上传和鉴权测试继续回归。Redis 缓存不含原文件或 Token。原 MCP 路由无需独立适配服务；本地检查不代替部署后的宿主联调。

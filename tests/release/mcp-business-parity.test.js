@@ -91,3 +91,50 @@ test("配置 Skill 保留 release 的字段约束、单项操作和级联核对�
 test("报告全文除 MCP 调用及宿主图表展示适配外与固定 release 基线一致", () => {
   assert.ok(review.includes(adapted(baseline.review.report)));
 });
+
+/** 验证新增原始文件会话遵循 prepare、HTTP 上传、commit 顺序；无入参，成功返回 void。 */
+test("原始文件上传保持会话顺序、归属和最终文件标识，兼容 URL 上传", () => {
+  const session = review.split("#### 上传会话：prepare → 二进制上传 → commit")[1].split("#### 完整 URL")[0];
+  assert.ok(session.indexOf("`upload-file-session-prepare`") < session.indexOf("`multipart/form-data`"));
+  assert.ok(session.indexOf("`multipart/form-data`") < session.indexOf("`upload-file-session-commit`"));
+  for (const requirement of ["同一", "用户和租户", "businessId/fileId/fileHash", "不拿 `upload_id` 当 `fileId`", "OAuth Token", "上传结果不明", "后端保存会话元数据和上传结果", "不保存原文件字节和 OAuth Token", "`upload_headers` 为空对象", "`upload_headers` 为空，不添加任何授权头", "不自行添加 `Authorization`", "日志或聊天回复", "/open-apis/contract-review/v3/mcp/files/upload_sessions/**"]) {
+    assert.ok(session.includes(requirement), `上传会话约束遗漏：${requirement}`);
+  }
+  assert.ok(review.includes("everyLine_100_openApi_mcp"));
+  assert.ok(review.includes("调用 `upload-contract-file-by-url`"));
+});
+
+/** 验证附件选路与用户直接提供的外链分流；无入参，返回 void。 */
+test("聊天附件与本地文件必须使用三段上传，附件 URL 不走 URL 工具", () => {
+  const attachments = review.split("#### 聊天附件与宿主差异")[1].split("#### 本地文件")[0];
+  assert.ok(attachments.includes("聊天附件和本地文件统一走下述上传会话"));
+  assert.ok(attachments.includes("不为传输合同调用 `FileBatchUpload`"));
+  assert.ok(attachments.includes("不自动退回 URL 上传"));
+  assert.ok(attachments.includes("已存在的附件下载 URL"));
+  const externalUrl = review.split("#### 完整 URL")[1].split("### 提取并匹配主体")[0];
+  assert.ok(externalUrl.includes("仅当用户直接提供外部完整下载 URL"));
+  assert.ok(externalUrl.includes("不是宿主为聊天附件提供的引用"));
+});
+
+/** 验证长结果先保存真实链接、核对全部卡片，链接缺失时保留任务成功事实；无入参，返回 void。 */
+test("结果交付先保存签名链接，成功缺链接不误报任务未完成", () => {
+  const linkRules = review.split("### 详情链接优先交付")[1]?.split('<a id="review-output">')[0];
+  assert.ok(linkRules, "缺少链接优先交付约束");
+  for (const requirement of ["reviewDetailUrl", "data.url", "先保存完整链接，再统计风险", "ruleResultCount", "相同任务和业务上下文", "最多补查一次", "审查已成功，详情链接获取异常", "待任务全部完成", "不重新上传或发起审查"]) {
+    assert.ok(linkRules.includes(requirement), `链接交付约束遗漏：${requirement}`);
+  }
+  for (const requirement of ["simplifyReviewResult=true", "响应进入网关前精简", "保留全部", "主体风险标记", "response_payload_too_large", "停止重复获取", "不推断为点数不足"]) {
+    assert.ok(linkRules.includes(requirement), `大结果处理约束遗漏：${requirement}`);
+  }
+});
+
+/** 验证宿主独立加载的两个 Skill 不依赖已移除的 MCP 读取工具；无入参，返回 void。 */
+test("宿主 Skill 直接调用业务工具，不依赖 MCP Skill 读取入口", () => {
+  for (const skill of [review, configuration]) {
+    assert.doesNotMatch(skill, /read-review-(?:config-)?skill/);
+    assert.match(skill, /宿主直接加载本 Skill/);
+    assert.match(skill, /everyline-cli-mcp-test/);
+    assert.match(skill, /everyline-cli-mcp-blue/);
+  }
+  assert.match(review, /blue 授权登录/);
+});

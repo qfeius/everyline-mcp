@@ -1,15 +1,15 @@
 ---
 name: everyline-review-config
-description: "通过 EveryLine MCP 查询和管理审查清单、审查规则及规则分组，包括新增、修改、归属与删除影响核对。当前任务启用 EveryLine MCP 时优先使用；先读取部署 Skill。仅在审查中选择已有清单时沿用审查 Skill。"
+description: "通过 EveryLine MCP 查询和管理审查清单、审查规则及规则分组，包括新增、修改、归属与删除影响核对。当前任务启用 EveryLine MCP 时优先使用。仅在审查中选择已有清单时沿用审查 Skill。"
 metadata:
-  version: "3.0.0"
+  version: "3.1.5"
 ---
 
 # everyline-review-config（MCP）
 
 业务流程以 everyline-cli release v1.1.1（`617a2cc47aa208cbc651412003b763afe4c55c41`）的原版配置 Skill 为基线，保留对象查询、逐项变更确认、完整集合、规则内容约束、归属与删除影响核对及写后回读；调用和授权适配为当前 EveryLine MCP。
 
-每个新会话首次维护配置前，以 `{}` 调用当前连接器的 `read-review-config-skill`，读取完整部署正文；当前正文已经由该工具返回时不重复调用。配置操作共用 `read-review-skill` 中的执行前检查、连接器与身份、状态恢复和通用边界；首次需要公共接入时读取它，配置目标仍由本 Skill 推进，不进入合同上传或审查流程。连接器承担 OAuth，不依赖本地 CLI、Profile 或跨 Skill 文件路径。工具缺失时处理目标连接器的启用、授权或刷新，保留原目标，不转到其他产品。
+宿主直接加载本 Skill，并按下述流程调用选定 EveryLine MCP 的配置工具；不通过 MCP 读取 Skill 正文。连接器承担 OAuth，不依赖本地 CLI 或 Profile。工具缺失时处理目标连接器的启用、授权或刷新，保留原目标，不转到其他产品。
 
 ## 触发边界
 
@@ -32,7 +32,7 @@ metadata:
 
 ## 运行时就绪检查
 
-用户指定 `everyline-cli-mcp-test` 时，配置操作与授权恢复始终使用该连接器的宿主 OAuth。宿主未暴露授权操作时引导至该连接器设置；不加载通用 `auth` 或 `contract-cli-*` 技能，不探测或执行 `contract-cli` / `everyline-cli-mcp` 命令，不使用本地 Profile 代替连接器身份。
+用户指定 `everyline-cli-mcp-test` 或 `everyline-cli-mcp-blue` 时，配置操作与授权恢复始终使用该连接器的宿主 OAuth。宿主未暴露授权操作时引导至该连接器设置；不加载通用 `auth` 或 `contract-cli-*` 技能，不探测或执行 `contract-cli` / `everyline-cli-mcp` 命令，不使用本地 Profile 代替连接器身份。
 
 每次会话首次进入时，核对当前连接器提供本 Skill 所需工具并读取其 Schema。固定连接器、当前用户与租户，后续查询、写入和回读复用同一上下文。首次使用展示实际 Skill 版本和已知 MCP 版本，缺失值写“未知”，不重复展示或编造最新版本。
 

@@ -7,7 +7,7 @@ const { execFileSync } = require("node:child_process");
 const { cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync, rmSync } = require("node:fs");
 const { join, basename } = require("node:path");
 const { tmpdir } = require("node:os");
-const { checkMCPRelease, updateMCPRelease, packageMCPRelease, exportChartSkills } = require("../../scripts/sync-mcp-skills");
+const { checkMCPRelease, updateMCPRelease, packageMCPRelease } = require("../../scripts/sync-mcp-skills");
 
 /**
  * fixture 在隔离目录复制 MCP 源文件与独立脚本，保证测试不会修改真实 Skill 或 Chart。
@@ -78,46 +78,6 @@ test("源正文或版本漂移时校验失败，阻止发布宿主 Skill", (t) =
   assert.ok(!readdirSync(root).includes("dist"));
   writeFileSync(source, original.replace(/  version: "[^"]+"/, '  version: "9.9.9"'));
   assert.throws(() => checkMCPRelease(root), /版本未同步/);
-});
-
-/** 验证退役入口在写入前报错；入参 t TestContext 管理隔离 Chart，返回 void。 */
-test("旧 Chart 同步命令显式报错，要求使用已校验的导出入口", (t) => {
-  const root = fixture(t);
-  const chart = join(root, "chart");
-  mkdirSync(chart);
-  writeFileSync(join(chart, "Chart.yaml"), "name: everyline-cli-mcp\n");
-  for (const args of [[chart], [chart, "--check"]]) {
-    assert.throws(() => execFileSync(process.execPath, [join(root, "scripts/sync-mcp-skills.js"), ...args], { stdio: "pipe" }), /已移除 Chart 同步入口/);
-    assert.deepEqual(readdirSync(chart), ["Chart.yaml"]);
-  }
-});
-
-/**
- * 验证 Chart 导出保持发布字节且不触碰接口，源漂移及错误目标在写入前失败。
- * 入参：t TestContext 管理隔离源工程和 Chart；返回值：void，任一发布边界失效时断言失败。
- */
-test("显式导出 Chart 技能与源发布一致，保留接口配置并拒绝未校验内容", (t) => {
-  const root = fixture(t);
-  const chart = join(root, "chart");
-  mkdirSync(join(chart, "files"), { recursive: true });
-  writeFileSync(join(chart, "Chart.yaml"), "name: everyline-cli-mcp-test\n");
-  const config = "server:\n  name: everyline-cli-mcp-test\n";
-  writeFileSync(join(chart, "files/mcp-config.yaml"), config);
-  const destination = exportChartSkills(chart, root);
-  const { manifest, contents } = checkMCPRelease(root);
-  assert.deepEqual(JSON.parse(readFileSync(join(destination, "manifest.json"), "utf8")), manifest);
-  for (const { name } of manifest.skills) {
-    assert.equal(readFileSync(join(destination, `${name}.md`), "utf8"), contents[name]);
-  }
-  assert.equal(readFileSync(join(chart, "files/mcp-config.yaml"), "utf8"), config);
-  // 源内容失配时仍保留目标已发布版本，不留下部分更新。
-  const skillPath = join(root, "mcp/skills/everyline-review/SKILL.md");
-  writeFileSync(skillPath, `${contents["everyline-review"]}\n未经发布的变更\n`);
-  assert.throws(() => exportChartSkills(chart, root), /摘要未同步/);
-  assert.equal(readFileSync(join(destination, "everyline-review.md"), "utf8"), contents["everyline-review"]);
-  writeFileSync(skillPath, contents["everyline-review"]);
-  writeFileSync(join(chart, "Chart.yaml"), "name: unrelated-service\n");
-  assert.throws(() => exportChartSkills(chart, root), /EveryLine MCP Chart/);
 });
 
 /** 验证用户实际解压路径；入参 t TestContext 管理制品，返回 void，源文件或摘要失配时失败。 */

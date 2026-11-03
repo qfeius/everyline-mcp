@@ -1,20 +1,20 @@
 # EveryLine MCP
 
-调用链：**用户目标 → 从 MCP 读取 EveryLine Skill → 宿主按 Skill 调用 MCP 业务接口 → EveryLine API**。MCP 提供技能正文与业务工具，宿主执行交互与编排。
+调用链：**用户目标 → 宿主加载 EveryLine Skill → 调用 MCP 业务接口 → EveryLine API**。MCP 提供业务工具，宿主执行交互与编排。
 
 | 层 | 职责 |
 | --- | --- |
 | 宿主 Skill | 用户交互、主体/强度/清单选择、调用顺序、分页、轮询、续办、写后回读与结果汇总 |
-| MCP / Higress | 技能正文读取、工具发现、参数校验、当前用户鉴权透传、业务请求映射及响应/错误转换 |
+| MCP / Higress | 工具发现、参数校验、当前用户鉴权透传、业务请求映射及响应/错误转换 |
 | EveryLine API | 业务执行、业务权限与数据持久化 |
 
-`mcp/skills/` 是 Skill 唯一维护源。test 工具映射与授权配置维护在 `test-contract-charts` 仓库 `20261016-zss-everyline-mcp` 分支的 `everyline-cli-mcp-test/` Chart。本工程已移除 CLI 实现及构建发布链路，只保留 Skill、接口说明与维护脚本。
+`mcp/skills/` 是 Skill 唯一维护源。test 工具映射与授权配置维护在 `test-contract-charts` 仓库 `20261016-zss-everyline-mcp` 分支的 `everyline-cli-mcp-test/` Chart。本工程已移除 CLI 实现及发布链路，只维护 Skill、接口说明与维护脚本。
 
-MCP 3.0.0 提供 25 项工具：2 项 Skill 读取、5 项上传/审查、7 项清单、4 项分组、7 项规则接口。退出与切换账号由宿主授权管理完成。业务工具说明指向对应的 Skill 读取入口，状态和详情每次查询一次，列表每次读取一页；后续调用由宿主按 Skill 安排。
+MCP 提供 25 项工具：7 项上传/审查、7 项清单、4 项分组、7 项规则接口。退出与切换账号由宿主授权管理完成。状态和详情每次查询一次，列表每次读取一页；后续调用由宿主按 Skill 安排。
 
 ## release 业务基线
 
-Skill 3.0.0 对齐 [everyline-cli release v1.1.1](https://github.com/qfeius/everyline-cli/tree/617a2cc47aa208cbc651412003b763afe4c55c41/skills)，固定来源提交 `617a2cc47aa208cbc651412003b763afe4c55c41`。保留业务规则，CLI 安装、命令调用和本地身份管理转换为连接器工具发现、结构化 arguments 与 OAuth；图表按宿主展示能力适配。
+Skill 3.1.5 对齐 [everyline-cli release v1.1.1](https://github.com/qfeius/everyline-cli/tree/617a2cc47aa208cbc651412003b763afe4c55c41/skills)，固定来源提交 `617a2cc47aa208cbc651412003b763afe4c55c41`。保留业务规则，CLI 安装、命令调用和本地身份管理转换为连接器工具发现、结构化 arguments 与 OAuth；图表按宿主展示能力适配。
 
 | 原版业务要求 | MCP Skill 中的落实 |
 | --- | --- |
@@ -24,26 +24,26 @@ Skill 3.0.0 对齐 [everyline-cli release v1.1.1](https://github.com/qfeius/ever
 | 单项配置维护 | 保留清单、规则、分组的查询、创建、编辑和删除步骤，完整集合、3000/1500 字限制、变更确认、影响复查和写后回读 |
 | 调用与结果适配 | 参数位于顶层，长 ID 用字符串，强度和风险等级转换为工具枚举，状态查询与详情分别核对，缺少原子能力时按原版门槛停止相关写入 |
 
-基线测试使用固定 release 的独立原文片段；仅显式适配 MCP 调用词与宿主图表展示方式，其余报告全文保持连续一致。源工程测试保护业务要求，Chart SDK 测试保护完整正文分发；两者均不替代宿主实际执行与图表渲染验收。
+基线测试使用固定 release 的独立原文片段；仅显式适配 MCP 调用词与宿主图表展示方式，其余报告全文保持连续一致。源工程测试保护业务要求，Chart SDK 测试保护业务工具映射；两者均不替代宿主实际执行与图表渲染验收。
 
 ## 宿主加载与调用
 
 1. 在宿主配置 EveryLine HTTP MCP 连接器并完成 OAuth。
-2. 刷新 MCP 工具清单，确认 `read-review-skill` 和 `read-review-config-skill` 可见。两份宿主 Skill ZIP 可辅助选路，MCP 自身提供完整部署正文。
-3. 审查或续办先调用 `read-review-skill`（参数 `{}`），配置查询/维护先调用 `read-review-config-skill`，然后按返回技能调用同一连接器业务工具。
+2. 导入两份宿主 Skill ZIP，并刷新 MCP 业务工具清单。
+3. 宿主按审查或配置任务加载对应 Skill，再调用同一连接器业务工具。
 
-从旧 CLI 版迁移时替换或停用宿主中旧技能，刷新连接器工具并新建任务。完整流程由 MCP 技能读取工具返回，宿主无需安装 CLI；原有本地文件上传方式与 URL 上传能力边界分别核对。
+迁移时先替换或停用宿主中的旧技能并安装新 Skill，再部署移除读取工具的 MCP Chart、刷新工具并新建任务；旧 Skill 仍依赖读取工具。完整流程由宿主独立 Skill 提供，宿主无需安装 CLI；原有本地文件上传方式与 URL 上传能力边界分别核对。
 
-豆包任务应启用目标 MCP（test 为 `everyline-cli-mcp-test`）并向模型提供其工具清单。“审查合同”应命中技能读取入口，随后依次确认立场、强度、规则来源；缺少任一项时先等待用户选择。MCP 提供加载入口，实际工具选择仍由宿主执行，应通过真实调用记录验收，不能只凭报告样式或模型自述确认。
+豆包任务应启用目标 MCP（test 为 `everyline-cli-mcp-test`）并向模型提供其工具清单。“审查合同”应命中审查 Skill，随后依次确认立场、强度、规则来源；缺少任一项时先等待用户选择。Skill 的加载和工具选择均由宿主执行，应通过真实调用记录验收，不能只凭报告样式或模型自述确认。
 
 豆包默认选路还需核对宿主配置：
 
-- 在“插件 · 技能 · 伙伴 → 管理 → 技能”中，将个人 EveryLine MCP 技能替换为当前发布版。发布 Chart 只更新连接器返回的正文，已有个人 Skill 不会自动升级；2.0.0 的说明仅匹配文件 URL，2.1.0 才覆盖附件和通用“审查合同”入口。
+- 在“插件 · 技能 · 伙伴 → 管理 → 技能”中，将个人 EveryLine MCP 技能替换为当前发布版。发布 Chart 不更新个人 Skill；2.0.0 的说明仅匹配文件 URL，2.1.0 才覆盖附件和通用“审查合同”入口。
 - 将 EveryLine 设为默认审查流程时，停用豆包推荐的“合同审查”（`doubao-contract-reviewer`），并停用旧 CLI 与重复来源的同名审查技能，保留当前 MCP 版。内置技能要求通用合同请求优先使用自身流程，只有 MCP 工具可见并不会改变这个选择。
-- 连接器工具仍为旧清单时，按宿主支持的方式刷新，核对两个读取入口与共 25 项工具，确认旧 `auth-logout` 已移除。用新任务检查首个审查步骤是否实际调用 `read-review-skill`；已有任务中加载的内置技能不作为新配置的验收依据。
+- 连接器工具仍为旧清单时，按宿主支持的方式刷新，核对共 25 项业务工具，确认旧 `auth-logout` 已移除。用新任务检查是否加载审查 Skill 并调用相应业务工具；已有任务中加载的内置技能不作为新配置的验收依据。
 - EveryLine 登录、授权和重新连接由 `everyline-review` 的选路描述接入。宿主同时安装通用 `auth` 时，将其范围限定为用户明确指定的 Contract CLI；已选定 `everyline-cli-mcp-test` 后的“test 授权登录”进入该连接器 OAuth。更新个人 Skill 后新建任务，旧任务中的已加载正文不用于验收新规则。
 
-业务参数直接放在 arguments 顶层，例如上传传 `{"fileUrl":"https://example.com/contract.pdf","name":"contract.pdf"}`，无筛选条件传 `{}`。Higress 按参数逐项展示注释；`config`、`data` 和数组保留业务结构。文件、任务与资源 ID 按字符串传递。Skill 读取工具不接受业务参数，也没有一键审查或等待结果工具。
+业务参数直接放在 arguments 顶层，例如上传传 `{"fileUrl":"https://example.com/contract.pdf","name":"contract.pdf"}`，无筛选条件传 `{}`。Higress 按参数逐项展示注释；`config`、`data` 和数组保留业务结构。文件、任务与资源 ID 按字符串传递。MCP 没有一键审查或等待结果工具。
 
 ## 连接器授权
 
@@ -57,28 +57,27 @@ Chart 使用现有 `/api/public/verify-access-token` 验真，失败关闭访问
 
 按宿主真实结果报告“已断开连接”或“已撤销授权”。前者不证明后端访问与刷新令牌均已失效，也不证明浏览器登录已退出。操作取消、失败或结果未知时不报告退出完成；退出后不再读取 Skill 或业务数据来探测状态，避免宿主自动重新授权。
 
-用户明确切换账号时，由宿主处理旧授权后，重新发起同一连接器的 OAuth，用户选择账号和租户。浏览器可能复用已有登录态，恢复业务前须核对真实身份、租户及受保护业务读取；原任务保留创建时租户归属，不在新租户下自动重建或续办。本次升级仅涉及 Skill 与 Chart，无需配套发布组织服务退出实现；部署后仍需验收目标宿主的授权管理、重新授权和双账号切换。
+用户明确切换账号时，由宿主处理旧授权后，重新发起同一连接器的 OAuth，用户选择账号和租户。浏览器可能复用已有登录态，恢复业务前须核对真实身份、租户及受保护业务读取；原任务保留创建时租户归属，不在新租户下自动重建或续办。退出流程无需配套发布组织服务退出实现；部署后仍需验收目标宿主的授权管理、重新授权和双账号切换。
 
-仅请求授权时使用宿主的连接器授权入口；宿主没有可调用的授权操作时，提示在目标连接器设置中授权或重新连接。已连接则复用；可通过 `read-review-skill` 验证访问，不创建业务任务。授权入口缺失、工具未加载或 HTTP 401 都不触发 `contract-cli` 或旧 EveryLine CLI。仅修改 MCP 返回的正文不足以修复授权前的选路，须同步宿主 Skill 的描述及旧 `auth` 的适用范围。
+仅请求授权时使用宿主的连接器授权入口；宿主没有可调用的授权操作时，提示在目标连接器设置中授权或重新连接。已连接则复用；以宿主实际连接状态核对授权，不创建业务任务。授权入口缺失、工具未加载或 HTTP 401 都不触发 `contract-cli` 或旧 EveryLine CLI。仅修改 MCP 工具说明不足以修复授权前的选路，须同步宿主 Skill 的描述及旧 `auth` 的适用范围。
 
 ## 版本与发布
 
-`mcp/skills-manifest.json` 记录 Skill 版本、名称与正文 SHA-256，两项 Skill 的 `metadata.version` 与清单一致。显式导出后，Chart 内发布副本按身份、版本与摘要校验，再编码为固定工具响应；修改流程后需重新导出并部署完整 Chart。`package.json` 为私有维护工具清单，不注册业务命令或安装钩子。
+`mcp/skills-manifest.json` 记录 Skill 版本、名称与正文 SHA-256，两项 Skill 的 `metadata.version` 与清单一致。Skill 独立打包给宿主，Chart 不读取或校验 Skill 正文。`package.json` 为私有维护工具清单，不注册业务命令或安装钩子。
 
 ```sh
-node scripts/sync-mcp-skills.js --version 3.0.0
-node scripts/sync-mcp-skills.js --export-chart ../test-contract-charts/everyline-cli-mcp-test
+node scripts/sync-mcp-skills.js --version 3.1.5
 make mcp-check
 make mcp-package
 ```
 
 上例版本替换为本次 Skill 版本。打包需要 Node.js、tar 和 zip。`make mcp-package` 生成以下文件及各自的 `.sha256`：
 
-- `dist/everyline-mcp-skills-3.0.0.tgz`：两项 Skill、清单、说明和独立校验/打包脚本。
-- `dist/everyline-review-mcp-skill-3.0.0.zip`：审查 Skill，ZIP 根目录为 `SKILL.md`。
-- `dist/everyline-review-config-mcp-skill-3.0.0.zip`：配置 Skill，ZIP 根目录为 `SKILL.md`。
+- `dist/everyline-mcp-skills-3.1.5.tgz`：两项 Skill、清单、说明和独立校验/打包脚本。
+- `dist/everyline-review-mcp-skill-3.1.5.zip`：审查 Skill，ZIP 根目录为 `SKILL.md`。
+- `dist/everyline-review-config-mcp-skill-3.1.5.zip`：配置 Skill，ZIP 根目录为 `SKILL.md`。
 
-核对发布文件摘要后，ZIP 可直接交给宿主导入。使用源归档时，解压后执行 `node scripts/sync-mcp-skills.js --check` 验证正文；也可用自带脚本重新生成导入包。`make release-check`、GitHub 发布与 GitLab 打包均校验并交付这些独立制品。发布标签通过 `node scripts/sync-mcp-skills.js --check-tag v3.0.0` 核对，并须匹配清单版本。CI 只发布 Skill 制品。
+核对发布文件摘要后，ZIP 可直接交给宿主导入。使用源归档时，解压后执行 `node scripts/sync-mcp-skills.js --check` 验证正文；也可用自带脚本重新生成导入包。`make release-check`、GitHub 发布与 GitLab 打包均校验并交付这些独立制品。发布标签通过 `node scripts/sync-mcp-skills.js --check-tag v3.1.5` 核对，并须匹配清单版本。CI 只发布 Skill 制品。
 
 Skill / MCP 2.1.0 增加连接器技能读取，保留附件审查入口及立场/强度/规则来源的用户选择条件。业务参数继续兼容 MCP 2.0.0，既有后端 API 保持不变。
 
@@ -102,12 +101,24 @@ Skill 1.4.0 通过宿主加载；Chart 0.4.0 / MCP 接口 1.4.0 移除原两项 
 
 ## 当前接口范围
 
-聊天附件需要宿主提供后端可访问的 HTTP/HTTPS URL；本地路径和正文文本不作为上传内容。后续需要接收附件字节时再设计上传接口。
+MCP 3.1.0 支持本地原始文件的 prepare → multipart 上传 → commit 会话。会话由 EveryLine 后端管理，content 复用原上传服务完成保存，commit 校验同一用户/租户并返回同次 businessId/fileId/fileHash；Redis 只保存元数据和结果。用户直接提供的外部完整下载 URL 使用既有 URL 上传，本地路径、正文和 Base64 不作为 JSON 工具的文件内容。
 
-豆包工作现场验收已确认可通过宿主 `FileBatchUpload` 将本地附件转换为可访问 URL，再调用 MCP 的 `upload-contract-file-by-url`；这一步无需安装 CLI。其他宿主仍需核对各自的附件传输能力。
+此前豆包现场曾通过 `FileBatchUpload` 和 `upload-contract-file-by-url` 处理附件。Skill 3.1.1 改为对聊天附件与本地文件使用三段上传，优先直接读取原文件；只有附件已存在宿主下载 URL 时，才由宿主读取该 URL 的原始字节再走三段。该路径不代表绕过宿主存储；各宿主能否读取文件并发送 multipart 仍需实际验收。
 
 配置工具使用现有 `/open-apis/review-rules/**` 既有入口，没有快照、原子移动工具及 `expectedRevision`、`impactToken`、`onlyIfEmpty` 参数。本次分层调整不引入后端新制品或数据库迁移。
 
 分页可见列表不证明全部引用完整；当前接口没有原子移动、空组条件删除或事务版本保护，清单更新会写入服务默认元数据。这些接口事实在工具说明中保留；如何核对影响、处理异常、组合内置与自定义规则来源、检查明细并展示结果，由宿主 Skill 编排。授权和真实豆包联调状态记录在 `dev-contract-charts/docs/everyline-cli-mcp-verification.md`。
 
 Skill / MCP 3.0.0 配套 Chart 0.9.0，移除 2.3.0 引入的 `auth-logout` 及 HTTP 映射，退出和切换账号统一交由宿主。工具数量从 26 项变为 25 项；需同步更新个人 Skill 并刷新宿主工具清单。全部原业务接口、OAuth 端点和现有鉴权透传保持原契约。
+
+
+MCP 3.1.0 新增 `upload-file-session-prepare` 与 `upload-file-session-commit`，共 27 项工具。后端使用 30 分钟 Redis 会话并复用 EveryLine V3 原始文件上传；content 使用会话地址，`upload_headers` 返回空对象，prepare/commit 沿用用户授权。`start-review-task` 固定携带 `usageReportContext.reportBusinessCode=everyLine_100_openApi_mcp`，所有业务请求沿用 `X-Qfei-Channel-Type: mcp`。
+
+三段接口统一使用 `/open-apis/contract-review/v3/mcp/files/upload_sessions/**`；后端直接注册完整开平路径，开放平台优先匹配三条 POST 并按原路径转发，旧 `/open-api/v3/mcp/files/upload_sessions/**` 端点移除。MCP 继续使用各环境原开平域名与上游；配套发布后端和开放平台路由后更新 MCP/Skill。原 URL 上传及审查继续使用既有调用链。
+
+Skill 3.1.2 配套 test/blue Chart 0.10.1：聊天附件和本地文件统一走上传会话，不再通过附件 URL 调用 URL 上传；用户主动提供外部下载链接时沿用原工具。MCP 接口版本保持 3.1.0，部署后刷新宿主 Skill 与工具清单并用真实调用记录验收。
+
+后端实例须先完成切换，再发布 MCP Chart 与宿主 Skill；旧、新实例混跑时，旧实例可能拒绝新会话的无头上传。回滚旧后端前完成或舍弃新会话并重新 prepare。
+
+
+Skill 3.1.3 配套 test Chart 0.10.2 / MCP 3.1.1：详情固定请求后端 `simplifyReviewResult=true`，在进入网关缓冲前生成精简报告视图，完整签名链接位于响应开头；全部风险卡片、说明与建议保留，重复正文、坐标和规则快照省略。先保存链接再核对卡片数；任务成功但缺链接时以同一任务和业务上下文补查一次，仍缺失则报告链接获取异常。先发布后端，再发布 test Chart 并刷新宿主 Skill/工具，以既有任务验收，不重复创建审查。本地验证不代表已部署。
