@@ -1,5 +1,8 @@
 .DS_Store
 .idea/
+.everyline-mcp/
+/everyline-mcp
+/everyline-mcp.exe
 .everyline-cli-mcp/
 /everyline-cli-mcp
 /everyline-cli-mcp.exe

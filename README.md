@@ -1,6 +1,6 @@
-# EveryLine MCP 与 Skill
+# everyline-mcp
 
-本工程采用 **宿主 Agent 加载独立 EveryLine Skill → 调用 MCP 业务接口 → EveryLine API**。Skill 负责编排，MCP 提供原 CLI 对应的业务接口。
+本项目维护 EveryLine MCP 与 Skill，源码仓库为 [qfeius/everyline-mcp](https://github.com/qfeius/everyline-mcp)。本工程采用 **宿主 Agent 加载独立 EveryLine Skill → 调用 MCP 业务接口 → EveryLine API**。Skill 负责编排，MCP 提供原 CLI 对应的业务接口。
 
 ## 工程组成
 
@@ -11,7 +11,7 @@
 - `tests/release/`：Skill 发布制品回归测试。
 - `docs/`：分层、接口映射与验证说明。
 
-test MCP 的 25 项业务工具、OAuth 与部署配置维护在 `test-contract-charts/everyline-cli-mcp-test/` Chart，共 25 项工具。宿主直接调用该 MCP 入口；本工程已移除 CLI 命令、Go 运行时、本地授权和 Profile、安装器及二进制/npm 发布流程。`package.json` 仅用于运行维护脚本，并标记为私有。仓库目录及连接器沿用 `everyline-cli-mcp` 名称，名称不代表存在 CLI 运行层。
+test MCP 的 25 项业务工具、OAuth 与部署配置维护在 `test-contract-charts/everyline-cli-mcp-test/` Chart，共 25 项工具。宿主直接调用该 MCP 入口；本工程已移除 CLI 命令、Go 运行时、本地授权和 Profile、安装器及二进制/npm 发布流程。`package.json` 仅用于运行维护脚本，并标记为私有。项目名称统一为 `everyline-mcp`；已部署的连接器及外部 Chart 沿用 `everyline-cli-mcp` 系列标识，名称不代表存在 CLI 运行层。
 
 ## 使用流程
 

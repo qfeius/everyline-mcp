@@ -1,15 +1,15 @@
 {
-  "name": "@qfeius/everyline-cli-mcp",
+  "name": "everyline-mcp",
   "private": true,
   "description": "EveryLine MCP 宿主 Skill 的校验与发布工具",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/qfeius/everyline-cli-mcp.git"
+    "url": "git+https://github.com/qfeius/everyline-mcp.git"
   },
-  "homepage": "https://git.qtech.cn/ai/everyline-cli-mcp",
+  "homepage": "https://github.com/qfeius/everyline-mcp",
   "bugs": {
-    "url": "https://git.qtech.cn/ai/everyline-cli-mcp/-/issues"
+    "url": "https://github.com/qfeius/everyline-mcp/issues"
   },
   "scripts": {
     "test": "node --test tests/release/*.test.js",
