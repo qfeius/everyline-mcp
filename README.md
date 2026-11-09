@@ -2,6 +2,8 @@
 
 本项目维护 EveryLine MCP 与 Skill，源码仓库为 [shuai326-zss/everyline-mcp](https://github.com/shuai326-zss/everyline-mcp)。本工程采用 **宿主 Agent 加载独立 EveryLine Skill → 调用 MCP 业务接口 → EveryLine API**。Skill 负责编排，MCP 提供原 CLI 对应的业务接口。
 
+迁移至 GitHub 后，Skill 从 `0.0.1` 重新计版；业务逻辑与 [GitLab 源分支提交 `7406bab`](https://git.qtech.cn/ai/everyline-cli-mcp/-/commit/7406bab4eeddca8787f1e7f4a66dcb881990efff) 保持一致。
+
 ## 工程组成
 
 - `mcp/skills/`：一个宿主 Skill，合同审查为入口，配置维护按需读取 `references/review-config.md`。
@@ -23,7 +25,7 @@ test MCP 的 25 项业务工具、OAuth 与部署配置维护在 `test-contract-
 
 审查流程由 Skill 安排：上传会话或 URL 上传 → 提取并选择主体 → 选择强度和规则来源 → 发起任务 → 查询状态 → 获取详情并展示结果。已有任务从原 `taskId` 继续。聊天附件和本地原始文件使用 prepare → multipart 上传 → commit；用户直接提供的外部下载 URL 继续使用既有 URL 上传。
 
-Skill 3.2.1 以 [everyline-cli release v1.1.1](https://github.com/qfeius/everyline-cli/tree/617a2cc47aa208cbc651412003b763afe4c55c41/skills) 为业务基线，保留完整编号交互、平台风险统计口径、报告模板和配置维护流程。图表优先使用宿主原生可视化，缺失或失败后实际尝试生成并嵌入 PNG；豆包补齐运行时检查与图片交付步骤，两条路径均有具体缺项或失败记录时才降级为文字，不输出 HTML/SVG 源码。发布测试独立检查固定 release 原文，仅显式适配 MCP 调用与宿主图表展示方式，继续保护统计、布局和签名链接规则。
+Skill 0.0.1 以 [everyline-cli release v1.1.1](https://github.com/qfeius/everyline-cli/tree/617a2cc47aa208cbc651412003b763afe4c55c41/skills) 为业务基线，保留完整编号交互、平台风险统计口径、报告模板和配置维护流程。图表优先使用宿主原生可视化，缺失或失败后实际尝试生成并嵌入 PNG；豆包补齐运行时检查与图片交付步骤，两条路径均有具体缺项或失败记录时才降级为文字，不输出 HTML/SVG 源码。发布测试独立检查固定 release 原文，仅显式适配 MCP 调用与宿主图表展示方式，继续保护统计、布局和签名链接规则。
 
 技能资源统一相对于宿主实际加载的技能根目录解析，配置参考返回时复用已加载入口。发布前校验说明和图标引用，阻止父目录跳转、错误拼接技能目录名及缺失文件进入包体。
 
@@ -40,7 +42,7 @@ make release-check
 修改 Skill 后更新独立版本及摘要：
 
 ```sh
-node scripts/sync-mcp-skills.js --version 3.2.1
+node scripts/sync-mcp-skills.js --version 0.0.1
 make release-check
 ```
 

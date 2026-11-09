@@ -2,7 +2,7 @@
 name: everyline-review
 description: "用户需要上传或审查合同、识别风险、获取修改建议、继续已有审查任务，或查询和维护审查清单、规则与分组时使用；也用于 EveryLine 服务的授权、退出与账号切换。"
 metadata:
-  version: "3.2.1"
+  version: "0.0.1"
   display_name: "EveryLine | AI 合同审查助手"
   display_description: "识别合同风险，提供修改建议，管理审查清单与规则。"
   icon: "./assets/icon.png"

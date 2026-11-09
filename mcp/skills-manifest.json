@@ -1,11 +1,11 @@
 {
   "schemaVersion": 2,
   "name": "everyline-mcp-skills",
-  "version": "3.2.1",
+  "version": "0.0.1",
   "skills": [
     {
       "name": "everyline-review",
-      "sha256": "73f8abf9fcaeef1c7ca4f48ef7cc1342e67b8ee5a98d425341d5a85ccd9cef95",
+      "sha256": "9c3fdb5e635b7b8e5ff232963b20ea5676b5055002e2b8af36173fd57b403003",
       "resources": [
         {
           "path": "assets/icon.png",
