@@ -1,6 +1,6 @@
 # MCP 接口映射
 
-test MCP 工具由 `test-contract-charts/everyline-cli-mcp-test/files/mcp-config.yaml` 定义。宿主分别加载 `everyline-review` 或 `everyline-review-config` Skill，再调用下表的业务工具；OAuth 由连接器负责。
+test MCP 工具由 `test-contract-charts/everyline-cli-mcp-test/files/mcp-config.yaml` 定义。宿主加载 `everyline-review` 唯一入口，配置任务按需读取其 `references/review-config.md`，再调用下表的业务工具；OAuth 由连接器负责。
 
 | MCP 工具 | 方法 | 路径 |
 | --- | --- | --- |

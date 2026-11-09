@@ -14,7 +14,7 @@ MCP 提供 25 项工具：7 项上传/审查、7 项清单、4 项分组、7 项
 
 ## release 业务基线
 
-Skill 3.1.5 对齐 [everyline-cli release v1.1.1](https://github.com/qfeius/everyline-cli/tree/617a2cc47aa208cbc651412003b763afe4c55c41/skills)，固定来源提交 `617a2cc47aa208cbc651412003b763afe4c55c41`。保留业务规则，CLI 安装、命令调用和本地身份管理转换为连接器工具发现、结构化 arguments 与 OAuth；图表按宿主展示能力适配。
+Skill 3.2.0 对齐 [everyline-cli release v1.1.1](https://github.com/qfeius/everyline-cli/tree/617a2cc47aa208cbc651412003b763afe4c55c41/skills)，固定来源提交 `617a2cc47aa208cbc651412003b763afe4c55c41`。保留业务规则，CLI 安装、命令调用和本地身份管理转换为连接器工具发现、结构化 arguments 与 OAuth；图表按宿主展示能力适配。
 
 | 原版业务要求 | MCP Skill 中的落实 |
 | --- | --- |
@@ -29,8 +29,8 @@ Skill 3.1.5 对齐 [everyline-cli release v1.1.1](https://github.com/qfeius/ever
 ## 宿主加载与调用
 
 1. 在宿主配置 EveryLine HTTP MCP 连接器并完成 OAuth。
-2. 导入两份宿主 Skill ZIP，并刷新 MCP 业务工具清单。
-3. 宿主按审查或配置任务加载对应 Skill，再调用同一连接器业务工具。
+2. 导入单个 Skill ZIP 或豆包 Plugin ZIP，并刷新 MCP 业务工具清单。升级时替换旧的两项 Skill，避免重复选路。
+3. 宿主加载 `everyline-review` 唯一入口；查询和维护清单、规则、分组时按需读取 `references/review-config.md`，再调用同一连接器业务工具。
 
 迁移时先替换或停用宿主中的旧技能并安装新 Skill，再部署移除读取工具的 MCP Chart、刷新工具并新建任务；旧 Skill 仍依赖读取工具。完整流程由宿主独立 Skill 提供，宿主无需安装 CLI；原有本地文件上传方式与 URL 上传能力边界分别核对。
 
@@ -63,21 +63,21 @@ Chart 使用现有 `/api/public/verify-access-token` 验真，失败关闭访问
 
 ## 版本与发布
 
-`mcp/skills-manifest.json` 记录 Skill 版本、名称与正文 SHA-256，两项 Skill 的 `metadata.version` 与清单一致。Skill 独立打包给宿主，Chart 不读取或校验 Skill 正文。`package.json` 为私有维护工具清单，不注册业务命令或安装钩子。
+`mcp/skills-manifest.json` 记录唯一 Skill 的版本、名称、正文、参考流程、图标与豆包声明的 SHA-256，入口的 `metadata.version` 与清单一致。Skill 独立打包给宿主，Chart 不读取或校验 Skill 正文。`package.json` 为私有维护工具清单，不注册业务命令或安装钩子。
 
 ```sh
-node scripts/sync-mcp-skills.js --version 3.1.5
+node scripts/sync-mcp-skills.js --version 3.2.0
 make mcp-check
 make mcp-package
 ```
 
 上例版本替换为本次 Skill 版本。打包需要 Node.js、tar 和 zip。`make mcp-package` 生成以下文件及各自的 `.sha256`：
 
-- `dist/everyline-mcp-skills-3.1.5.tgz`：两项 Skill、清单、说明和独立校验/打包脚本。
-- `dist/everyline-review-mcp-skill-3.1.5.zip`：审查 Skill，ZIP 根目录为 `SKILL.md`。
-- `dist/everyline-review-config-mcp-skill-3.1.5.zip`：配置 Skill，ZIP 根目录为 `SKILL.md`。
+- `dist/everyline-mcp-skills-3.2.0.tgz`：唯一 Skill 的完整资源、豆包声明、清单、说明和独立校验/打包脚本。
+- `dist/everyline-review-mcp-skill-3.2.0.zip`：合并后的 Skill，ZIP 根目录为 `SKILL.md`、`references/` 和 `assets/`。
+- `dist/everyline-doubao-plugin-3.2.0.zip`：豆包插件，包含一个线上连接器和一个顶层 Skill；两者展示名均为“EveryLine | AI 合同审查助手”，技术名分别保留 `everyline-cli-mcp` 和 `everyline-review`。
 
-核对发布文件摘要后，ZIP 可直接交给宿主导入。使用源归档时，解压后执行 `node scripts/sync-mcp-skills.js --check` 验证正文；也可用自带脚本重新生成导入包。`make release-check`、GitHub 发布与 GitLab 打包均校验并交付这些独立制品。发布标签通过 `node scripts/sync-mcp-skills.js --check-tag v3.1.5` 核对，并须匹配清单版本。CI 只发布 Skill 制品。
+核对发布文件摘要后，ZIP 可直接交给宿主导入。使用源归档时，解压后执行 `node scripts/sync-mcp-skills.js --check` 验证正文；也可用自带脚本重新生成导入包。`make release-check`、GitHub 发布与 GitLab 打包均校验并交付这些独立制品。发布标签通过 `node scripts/sync-mcp-skills.js --check-tag v3.2.0` 核对，并须匹配清单版本。CI 只发布 Skill 制品。
 
 Skill / MCP 2.1.0 增加连接器技能读取，保留附件审查入口及立场/强度/规则来源的用户选择条件。业务参数继续兼容 MCP 2.0.0，既有后端 API 保持不变。
 

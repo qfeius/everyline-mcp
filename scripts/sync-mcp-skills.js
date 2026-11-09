@@ -2,27 +2,53 @@
 
 const { createHash } = require("node:crypto");
 const { execFileSync } = require("node:child_process");
-const { readFileSync, mkdirSync, writeFileSync, rmSync } = require("node:fs");
+const { readFileSync, readdirSync, mkdirSync, mkdtempSync, writeFileSync, rmSync } = require("node:fs");
 const { resolve, join, basename } = require("node:path");
+const { tmpdir } = require("node:os");
 const { isDeepStrictEqual } = require("node:util");
 
-// Skill 源清单用于生成和校验独立的宿主 ZIP。
-const skillNames = ["everyline-review", "everyline-review-config"];
+// 只有一个顶层 Skill；配置流程和图标作为同一技能的资源随包发布。
+const skillNames = ["everyline-review"];
+const doubaoFiles = ["mcp/doubao/plugin.json", "mcp/doubao/mcp.json"];
 const repositoryRoot = resolve(__dirname, "..");
 const manifestPath = "mcp/skills-manifest.json";
 
 /**
+ * readSkillFiles 递归读取技能资源，拒绝符号链接和特殊文件，避免归档依赖包外文件。
+ * 入参：directory string 为当前目录，prefix string 为技能内相对路径。
+ * 返回值：object，以相对路径索引原始 Buffer，供摘要和归档共同使用。
+ */
+function readSkillFiles(directory, prefix = "") {
+  const files = {};
+  for (const entry of readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+    const path = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) Object.assign(files, readSkillFiles(join(directory, entry.name), path));
+    else if (entry.isFile()) files[path] = readFileSync(join(directory, entry.name));
+    else throw new Error(`不支持的 Skill 资源: ${path}`);
+  }
+  return files;
+}
+
+/**
  * prepareMCPRelease 校验全部 Skill 身份和版本，在写入前准备正文与摘要。
  * 入参：root string 为源码/制品根目录；version string 为 MCP Skill 发布版本；updateVersion boolean 表示同步正文版本。
- * 返回值：object，包含发布 manifest 和按 Skill 名索引的 contents；格式错误时抛出 Error。
+ * 返回值：object，包含发布 manifest、入口 contents 和全部原始资源 files；格式错误时抛出 Error。
  */
 function prepareMCPRelease(root, version, updateVersion = false) {
   if (typeof version !== "string" || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version)) {
     throw new Error(`无效 MCP Skill 发布版本: ${version}`);
   }
   const contents = {};
+  const files = {};
+  if (!isDeepStrictEqual(readdirSync(join(root, "mcp/skills")).sort(), skillNames)) {
+    throw new Error("只允许发布 everyline-review 顶层 Skill；配置流程应放在 references 中");
+  }
   const skills = skillNames.map((name) => {
-    const source = readFileSync(join(root, "mcp", "skills", name, "SKILL.md"), "utf8");
+    const resources = readSkillFiles(join(root, "mcp", "skills", name));
+    if (!resources["references/review-config.md"] || !resources["assets/icon.png"]) {
+      throw new Error(`MCP Skill 缺少配置流程或图标: ${name}`);
+    }
+    const source = resources["SKILL.md"]?.toString("utf8") || "";
     const header = source.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
     const names = header?.[1].match(/^name: .+$/gm) || [];
     const versions = header?.[1].match(/^  version: .+$/gm) || [];
@@ -38,9 +64,21 @@ function prepareMCPRelease(root, version, updateVersion = false) {
       throw new Error(`MCP Skill 版本未同步: ${name}`);
     }
     contents[name] = content;
-    return { name, sha256: createHash("sha256").update(content).digest("hex") };
+    resources["SKILL.md"] = Buffer.from(content);
+    for (const [path, data] of Object.entries(resources)) files[`mcp/skills/${name}/${path}`] = data;
+    return {
+      name,
+      sha256: createHash("sha256").update(content).digest("hex"),
+      resources: Object.entries(resources).filter(([path]) => path !== "SKILL.md")
+        .map(([path, data]) => ({ path, sha256: createHash("sha256").update(data).digest("hex") })),
+    };
   });
-  return { manifest: { schemaVersion: 1, name: "everyline-mcp-skills", version, skills }, contents };
+  const doubao = doubaoFiles.map((path) => {
+    files[path] = readFileSync(join(root, path));
+    JSON.parse(files[path].toString("utf8"));
+    return { path, sha256: createHash("sha256").update(files[path]).digest("hex") };
+  });
+  return { manifest: { schemaVersion: 2, name: "everyline-mcp-skills", version, skills, doubao }, contents, files };
 }
 
 /**
@@ -69,24 +107,48 @@ function updateMCPRelease(version, root = repositoryRoot) {
 }
 
 /**
- * packageMCPRelease 生成独立源归档和宿主可直接导入的 Skill ZIP。
+ * packageMCPRelease 生成源归档、完整单技能 ZIP 和带线上连接器的豆包 Plugin ZIP。
  * 入参：outputDirectory string 为制品目录；root string 为源码根目录。
  * 返回值：string 为源归档绝对路径；清单校验、打包或摘要写入失败时抛出 Error。
  */
 function packageMCPRelease(outputDirectory, root = repositoryRoot) {
-  const { manifest } = checkMCPRelease(root);
+  const { manifest, files } = checkMCPRelease(root);
   const output = resolve(outputDirectory);
   mkdirSync(output, { recursive: true });
   const archive = join(output, `everyline-mcp-skills-${manifest.version}.tgz`);
   execFileSync("tar", ["-czf", archive, "-C", root, manifestPath, "mcp/README.md", "scripts/sync-mcp-skills.js",
-    ...skillNames.map((name) => `mcp/skills/${name}/SKILL.md`)]);
+    ...Object.keys(files)]);
   const artifacts = [archive];
   for (const name of skillNames) {
     const bundle = join(output, `${name}-mcp-skill-${manifest.version}.zip`);
-    // ZIP 根目录直接放 SKILL.md，匹配宿主导入格式；重建归档避免旧条目残留。
+    // 入口与全部资源一起导入，避免配置流程或图标在宿主中缺失。
     rmSync(bundle, { force: true });
-    execFileSync("zip", ["-q", bundle, "SKILL.md"], { cwd: join(root, "mcp", "skills", name) });
+    const prefix = `mcp/skills/${name}/`;
+    const members = Object.keys(files).filter((path) => path.startsWith(prefix)).map((path) => path.slice(prefix.length));
+    execFileSync("zip", ["-q", bundle, ...members], { cwd: join(root, "mcp", "skills", name) });
     artifacts.push(bundle);
+  }
+  const staging = mkdtempSync(join(tmpdir(), "everyline-doubao-"));
+  try {
+    const members = {};
+    for (const path of doubaoFiles) members[basename(path)] = files[path];
+    for (const [path, data] of Object.entries(files)) {
+      if (path.startsWith("mcp/skills/")) members[path.slice("mcp/".length)] = data;
+    }
+    // 同一份原版 512px Logo 用于插件、会话、连接器和技能，保持展示一致。
+    for (const name of ["plugin-icon", "plugin-chat-icon", "mcp-icon"]) {
+      members[`com.doubao/assets/${name}.png`] = files["mcp/skills/everyline-review/assets/icon.png"];
+    }
+    for (const [path, data] of Object.entries(members)) {
+      mkdirSync(join(staging, path, ".."), { recursive: true });
+      writeFileSync(join(staging, path), data);
+    }
+    const bundle = join(output, `everyline-doubao-plugin-${manifest.version}.zip`);
+    rmSync(bundle, { force: true });
+    execFileSync("zip", ["-q", bundle, ...Object.keys(members).sort()], { cwd: staging });
+    artifacts.push(bundle);
+  } finally {
+    rmSync(staging, { recursive: true, force: true });
   }
   for (const artifact of artifacts) {
     const digest = createHash("sha256").update(readFileSync(artifact)).digest("hex");

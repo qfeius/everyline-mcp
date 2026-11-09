@@ -5,7 +5,7 @@
 ```text
 用户目标
    ↓
-宿主 Agent 加载 everyline-review / everyline-review-config Skill
+宿主 Agent 加载 everyline-review 唯一 Skill 入口
 （交互、选择、分页、轮询、续办、写后回读、结果展示）
    ↓ 调用
 MCP / Higress
@@ -17,7 +17,7 @@ EveryLine API
 
 ## 模块职责
 
-`mcp/skills/` 是两项 Skill 的唯一维护源：`everyline-review` 编排审查，`everyline-review-config` 编排清单、分组和规则维护。发布正文用于宿主 ZIP，宿主 Agent 执行规则并保存文件标识、任务 ID、用户选择和进度。
+`mcp/skills/everyline-review/` 是唯一 Skill 维护源：入口编排审查，`references/review-config.md` 按需编排清单、分组和规则维护。发布正文用于宿主 ZIP，宿主 Agent 执行规则并保存文件标识、任务 ID、用户选择和进度。
 
 `test-contract-charts/everyline-cli-mcp-test/` 承载 25 项业务工具。业务工具每次映射一个开平接口，两个会话工具也指向 EveryLine 后端。调用顺序、等待间隔、结果完整性检查和汇总策略均由 Skill 安排。
 
@@ -29,7 +29,7 @@ EveryLine API
 
 三段上传由 EveryLine 后端以完整 `/open-apis/contract-review/v3/mcp/files/upload_sessions/**` 路径提供，开放平台对三条 POST 按原路径转发。prepare 生成绑定用户/租户的限时会话，content 复用既有文件上传服务，commit 仅核对归属并返回缓存结果。Redis 只保存会话元数据与结果，原文件沿用原对象存储和文件表。MCP 继续使用原开平上游，无额外上传适配服务；先发布后端、开放平台转发及环境配置，再发布 MCP/Skill。
 
-Skill 的唯一发布版本位于 `mcp/skills-manifest.json`，两份 `SKILL.md` 的版本与摘要须一致。校验后的 Skill 分别打包为宿主 ZIP；Chart 与 Skill 独立发布，不读取 Chart 内历史 Skill 副本。
+Skill 的唯一发布版本位于 `mcp/skills-manifest.json`，入口 `SKILL.md` 的版本与清单一致；正文、参考流程、图标和豆包声明均登记摘要。校验后生成完整的单技能 ZIP 和豆包 Plugin ZIP；Chart 与 Skill 独立发布，不读取 Chart 内历史 Skill 副本。
 
 宿主先加载匹配的 Skill，再发现和调用 MCP 业务工具。验收须确认宿主实际加载 Skill 并调用正确连接器；本地校验不代表集群已部署或宿主已选择该连接器。
 

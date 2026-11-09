@@ -8,7 +8,7 @@ const { join } = require("node:path");
 // 期望值摘自固定 release 提交，独立于 MCP 正文和 manifest；重新计算摘要不能掩盖业务规则丢失。
 const baseline = require("./fixtures/release-business-baseline.json");
 const review = readFileSync(join(__dirname, "../../mcp/skills/everyline-review/SKILL.md"), "utf8");
-const configuration = readFileSync(join(__dirname, "../../mcp/skills/everyline-review-config/SKILL.md"), "utf8");
+const configuration = readFileSync(join(__dirname, "../../mcp/skills/everyline-review/references/review-config.md"), "utf8");
 
 /**
  * adapted 将冻结基线中的调用名称映射为 MCP 名称，并显式适配宿主图表执行与降级条件。
@@ -66,12 +66,17 @@ function adapted(source) {
 }
 
 /**
- * assertRetained 逐段核对上游业务要求，新增 MCP 说明可以插入，原版规则不得遗漏。
+ * assertRetained 逐段核对上游业务要求，只显式适配单入口后的配置流程称谓和引用路径。
  * 入参：actual string 为 MCP 正文，sections object 为原版命名片段；返回值：void，缺段时断言失败。
  */
 function assertRetained(actual, sections) {
   for (const [name, original] of Object.entries(sections)) {
-    for (const paragraph of adapted(original).split("\n\n")) {
+    const source = sections === baseline.configuration
+      ? original.replaceAll("本 Skill", "本配置流程").replaceAll("本配置流程 ", "本配置流程")
+        .replaceAll("该步骤属于 `everyline-review`", "该步骤属于入口的[合同审查流程](../SKILL.md#review)")
+        .replaceAll("转回 `everyline-review`", "转回入口的[合同审查流程](../SKILL.md#review)")
+      : original;
+    for (const paragraph of adapted(source).split("\n\n")) {
       assert.ok(actual.includes(paragraph), `release ${baseline.commit} 业务规则遗漏：${name}`);
     }
   }
@@ -83,7 +88,7 @@ test("审查 Skill 保留 release 的交互、风险口径、完整模板和图�
 });
 
 /** 验证原版配置约束和影响核对留存；无入参，返回 void，业务要求缩减时失败。 */
-test("配置 Skill 保留 release 的字段约束、单项操作和级联核对流程", () => {
+test("配置参考流程保留 release 的字段约束、单项操作和级联核对流程", () => {
   assertRetained(configuration, baseline.configuration);
 });
 
@@ -128,13 +133,16 @@ test("结果交付先保存签名链接，成功缺链接不误报任务未完�
   }
 });
 
-/** 验证宿主独立加载的两个 Skill 不依赖已移除的 MCP 读取工具；无入参，返回 void。 */
-test("宿主 Skill 直接调用业务工具，不依赖 MCP Skill 读取入口", () => {
+/** 验证唯一入口按需加载配置参考且不依赖旧读取工具；无入参，返回 void。 */
+test("唯一 Skill 入口直接调用业务工具并路由到包内配置流程", () => {
   for (const skill of [review, configuration]) {
     assert.doesNotMatch(skill, /read-review-(?:config-)?skill/);
-    assert.match(skill, /宿主直接加载本 Skill/);
     assert.match(skill, /everyline-cli-mcp-test/);
     assert.match(skill, /everyline-cli-mcp-blue/);
   }
+  assert.match(review, /宿主直接加载本 Skill/);
+  assert.match(review, /\[审查配置流程\]\(references\/review-config\.md\)/);
+  assert.doesNotMatch(review, /everyline-review-config/);
+  assert.match(configuration, /\.\.\/SKILL\.md#review/);
   assert.match(review, /blue 授权登录/);
 });

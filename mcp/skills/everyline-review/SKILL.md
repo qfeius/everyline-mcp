@@ -1,13 +1,16 @@
 ---
 name: everyline-review
-description: "通过 EveryLine MCP 在 Codex / 豆包 / WorkBuddy 完成连接器授权、退出登录和合同审查。用户指定 EveryLine、everyline-cli-mcp-test 或 everyline-cli-mcp-blue 的登录、授权或重新连接，或已选定对应连接器后说“test 授权登录”或“blue 授权登录”时，走宿主对该连接器的 OAuth；明确要求退出或切换账号时，由宿主管理旧授权，切换账号再由宿主重新授权。对上传合同、合同风险、能否签署、合同是否有问题、审查合同及已有任务续办优先使用本 Skill。"
+description: "用户需要上传或审查合同、识别风险、获取修改建议、继续已有审查任务，或查询和维护审查清单、规则与分组时使用；也用于 EveryLine 服务的授权、退出与账号切换。"
 metadata:
-  version: "3.1.5"
+  version: "3.2.0"
+  display_name: "EveryLine | AI 合同审查助手"
+  display_description: "识别合同风险，提供修改建议，管理审查清单与规则。"
+  icon: "./assets/icon.png"
 ---
 
-# EveryLine 合同审查与公共接入（MCP）
+# EveryLine | AI 合同审查助手
 
-业务流程以 everyline-cli release v1.1.1（`617a2cc47aa208cbc651412003b763afe4c55c41`）的原版 Skill 为基线。主体、强度、清单选择、风险统计、完整报告、图表和配置业务规则保留；执行入口适配为当前连接器的 MCP 工具，授权由连接器负责。合同审查主线与完整结果模板均在本文件，配置管理由宿主加载的 `everyline-review-config` 负责。
+业务流程以 everyline-cli release v1.1.1（`617a2cc47aa208cbc651412003b763afe4c55c41`）的原版 Skill 为基线。主体、强度、清单选择、风险统计、完整报告、图表和配置业务规则保留；执行入口适配为当前连接器的 MCP 工具，授权由连接器负责。合同审查主线与完整结果模板均在本文件，配置管理按需读取本技能内的[审查配置流程](references/review-config.md)，不再单独注册配置 Skill。
 
 ## 触发与流程入口
 
@@ -18,14 +21,14 @@ metadata:
 | 仅安装、导入、复制或更新 EveryLine Skill | 本轮读取 Skill，并执行[连接器就绪检查](#preflight) |
 | 首次接入、了解能力或更新连接器 | [执行前检查](#preflight)、[连接器接入与更新](#setup) |
 | 用户授权、身份选择、状态检查、退出或恢复 | [连接器与身份](#identity)、[状态、退出与恢复](#auth-recovery) |
-| 查询、创建、修改或删除清单、规则、分组 | 加载宿主中的 `everyline-review-config` Skill |
+| 查询、创建、修改或删除清单、规则、分组 | 读取本技能内的[审查配置流程](references/review-config.md) |
 
-- 用户指定 `everyline-cli-mcp-test` 或 `everyline-cli-mcp-blue`，或已选定对应连接器后提出“test 授权登录”“blue 授权登录”“重新授权”时，先进入[连接器与身份](#identity)。仅凭环境名不推断产品；尚未选定连接器时先确认目标。
+- 用户指定 `everyline-cli-mcp`、`everyline-cli-mcp-test` 或 `everyline-cli-mcp-blue`，或已选定对应连接器后提出“test 授权登录”“blue 授权登录”“重新授权”时，先进入[连接器与身份](#identity)。仅凭环境名不推断产品；尚未选定连接器时先确认目标。
 - EveryLine 的登录、授权状态和过期恢复均由同一连接器管理，不加载通用 `auth`、`contract-cli-*` 或旧 CLI 技能，也不探测、安装或运行 `contract-cli` / `everyline-cli-mcp` 命令。连接器工具缺失或授权失败时仍保持所选连接器。
 - 仅请求登录时不进入合同上传、任务创建或配置写入。已有有效连接时复用授权；授权后可刷新工具清单；以宿主连接状态确认授权，工具仅可见或用户口头确认不代表授权成功。
 - 仅请求退出登录或切换账号时，立即停止当前连接器的业务请求和轮询，直接进入[状态、退出与恢复](#auth-recovery)，使用宿主对目标连接器的授权管理能力；无需先读取审查技能或查询业务数据。用户明确退出或切换账号已构成相应操作授权，不追加重复确认。
 - 用户只上传单份合同且未指定其他任务时，直接进入审查引导；多个合同候选先选择本次文件。用户明确要求起草、改写、翻译、一般法律咨询或使用其他合同工具时，按其实际目标处理，不由本 Skill 发起审查。
-- “用清单 A 审查合同”属于审查流程中的已有清单选择；“新建或修改清单后审查合同”先读取 `everyline-review-config` 完成配置确认、写入和回读，再携带真实清单 ID 及已有参数继续审查。审查请求本身不代表用户确认配置写入。
+- “用清单 A 审查合同”属于审查流程中的已有清单选择；“新建或修改清单后审查合同”先读取[审查配置流程](references/review-config.md)完成配置确认、写入和回读，再携带真实清单 ID 及已有参数继续审查。审查请求本身不代表用户确认配置写入。
 - 各入口共用执行前检查、连接器与身份及通用边界。遇到接入或鉴权缺口时保留原目标与已确认输入，处理完成后回到中断步骤，不重新询问合同、主体、强度或清单。
 - 本文的工具名均指当前选定的 EveryLine MCP 连接器。示例占位值只说明结构，调用时使用本次真实返回值，不固定个人路径、资源 ID 或环境。
 
@@ -34,9 +37,9 @@ metadata:
 
 安装、导入、复制或更新 Skill 后，以及每个新会话首次使用时，在本轮检查目标连接器和工具清单；不等待下一次审查请求。同一轮已经验证且未变化时复用结果。仅复制技能文件不代表连接器和授权已就绪。退出或切换账号请求优先进入状态、退出与恢复，不为执行就绪检查触发旧授权的业务调用或自动登录。
 
-1. 固定用户指定或当前任务启用的 EveryLine 连接器。用户指定 `everyline-cli-mcp-test` 或 `everyline-cli-mcp-blue` 时，后续始终使用该连接器；多个候选且目标不明确时展示真实连接器名称供选择。
+1. 固定用户指定或当前任务启用的 EveryLine 连接器。用户指定 `everyline-cli-mcp`、`everyline-cli-mcp-test` 或 `everyline-cli-mcp-blue` 时，后续始终使用该连接器；多个候选且目标不明确时展示真实连接器名称供选择。
 2. 宿主直接加载本 Skill，并按本文件调用已选连接器的业务工具；不需要通过 MCP 读取 Skill 正文。
-3. 聊天附件或本地文件的新建任务核对 `upload-file-session-prepare` / `upload-file-session-commit`；用户直接给出外部下载 URL 时核对 `upload-contract-file-by-url`。两类输入均核对 `extract-contract-subjects`、`list-review-checklists`、`start-review-task`、`get-review-task-status`、`get-review-task-info`；已有 `taskId` 时仅核对状态和详情工具。配置操作读取配置 Skill 后核对相应工具。
+3. 聊天附件或本地文件的新建任务核对 `upload-file-session-prepare` / `upload-file-session-commit`；用户直接给出外部下载 URL 时核对 `upload-contract-file-by-url`。两类输入均核对 `extract-contract-subjects`、`list-review-checklists`、`start-review-task`、`get-review-task-status`、`get-review-task-info`；已有 `taskId` 时仅核对状态和详情工具。配置任务只核对[审查配置流程](references/review-config.md)中本次操作所需工具，不要求合同文件或审查上传能力。
 4. 每次具体操作前查看当前工具 Schema 与说明；工具清单、结构化输出与本文不一致时，以真实能力为准并说明缺项，不猜测未注册工具或字段。
 5. 每会话首次检查后展示一次实际加载的 `metadata.version` 与连接器公开的 MCP 版本；缺失值写“未知”，不以 Skill 版本代替 MCP 版本。只有取得可信发布信息时才按 SemVer 比较版本，否则明确最新状态未知，不因版本查询缺失中断已就绪业务。
 
@@ -337,5 +340,5 @@ Codex、豆包和 WorkBuddy 统一使用以下结构：基础信息表、审查�
 - 合同、规则内容和附件只发送给用户选择的 EveryLine 流程，不进入其他服务。
 - 只总结真实返回的风险、条款依据及建议；数据、上下文或模型结论不足时保留不确定性。EveryLine 结果用于 AI 辅助风险识别，不代替专业律师意见或最终法律决定；成功结果仍按固定模板输出。
 - 敏感凭据仅由宿主连接器授权入口处理，不向对话索取或自行保存。已经进入对话的长期凭据应提示轮换，后续不再引用其内容。
-- 配置写操作必须遵守 `everyline-review-config` 中的授权与回读要求；出现鉴权问题按[状态、退出与恢复](#auth-recovery)处理，再恢复原步骤。
-- 用户提出修改清单、规则或分组时，先加载宿主中的 `everyline-review-config` Skill；单次审查不自动更改持久规则。
+- 配置写操作必须遵守 [审查配置流程](references/review-config.md)中的授权与回读要求；出现鉴权问题按[状态、退出与恢复](#auth-recovery)处理，再恢复原步骤。
+- 用户提出修改清单、规则或分组时，先读取本技能内的[审查配置流程](references/review-config.md)；单次审查不自动更改持久规则。

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "everyline-contract-review",
+  "description": "识别合同风险，提供修改建议，管理审查清单与规则。",
+  "extensions": {
+    "com.doubao": {
+      "displayName": {
+        "zh": "EveryLine | AI 合同审查助手"
+      },
+      "displayDescription": {
+        "zh": "识别合同风险，提供修改建议，管理审查清单与规则。"
+      },
+      "icon": "./com.doubao/assets/plugin-icon.png",
+      "chatIcon": "./com.doubao/assets/plugin-chat-icon.png",
+      "mcpServers": {
+        "everyline-cli-mcp": {
+          "displayName": {
+            "zh": "EveryLine | AI 合同审查助手"
+          },
+          "displayDescription": {
+            "zh": "识别合同风险，提供修改建议，管理审查清单与规则。"
+          },
+          "icon": "./com.doubao/assets/mcp-icon.png"
+        }
+      }
+    }
+  }
+}

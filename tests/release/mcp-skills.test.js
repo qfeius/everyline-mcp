@@ -25,8 +25,8 @@ function fixture(t) {
 }
 
 /** 校验真实源发布入口；无入参，返回 void，源清单失配时失败。 */
-test("当前 MCP 发布清单与两项源 Skill 一致", () => {
-  assert.equal(checkMCPRelease().manifest.skills.length, 2);
+test("当前 MCP 发布清单只注册合并后的唯一 Skill", () => {
+  assert.deepEqual(checkMCPRelease().manifest.skills.map(({ name }) => name), ["everyline-review"]);
 });
 
 /**
@@ -36,7 +36,7 @@ test("当前 MCP 发布清单与两项源 Skill 一致", () => {
 test("core.autocrlf=true 检出后 MCP 正文和清单保持 LF，仍可独立校验", (t) => {
   const root = fixture(t);
   const release = checkMCPRelease(root);
-  const paths = ["mcp/skills-manifest.json", ...release.manifest.skills.map(({ name }) => `mcp/skills/${name}/SKILL.md`)];
+  const paths = ["mcp/skills-manifest.json", ...Object.keys(release.files)];
   const originals = paths.map((path) => readFileSync(join(root, path)));
   execFileSync("git", ["init", "-q"], { cwd: root });
   execFileSync("git", ["-c", "core.autocrlf=false", "add", "-f", "."], { cwd: root });
@@ -51,20 +51,35 @@ test("core.autocrlf=true 检出后 MCP 正文和清单保持 LF，仍可独立�
 test("Skill 升版保留正文与维护工具清单，错误输入不留下部分更新", (t) => {
   const root = fixture(t);
   const first = join(root, "mcp/skills/everyline-review/SKILL.md");
-  const second = join(root, "mcp/skills/everyline-review-config/SKILL.md");
+  const reference = join(root, "mcp/skills/everyline-review/references/review-config.md");
   const original = readFileSync(first, "utf8");
+  const originalReference = readFileSync(reference);
   writeFileSync(join(root, "package.json"), '{"private":true}\n');
   updateMCPRelease("1.2.3", root);
   assert.equal(checkMCPRelease(root).manifest.version, "1.2.3");
   assert.equal(readFileSync(join(root, "package.json"), "utf8"), '{"private":true}\n');
   assert.equal(readFileSync(first, "utf8").split("\n---\n")[1], original.split("\n---\n")[1]);
+  assert.deepEqual(readFileSync(reference), originalReference);
   const before = readFileSync(first, "utf8");
   const manifest = readFileSync(join(root, "mcp/skills-manifest.json"), "utf8");
   assert.throws(() => updateMCPRelease("../invalid", root), /无效 MCP/);
-  writeFileSync(second, readFileSync(second, "utf8").replace("name: everyline-review-config", "name: another-skill"));
-  assert.throws(() => updateMCPRelease("1.2.4", root), /frontmatter/);
+  rmSync(reference);
+  assert.throws(() => updateMCPRelease("1.2.4", root), /缺少配置流程/);
   assert.equal(readFileSync(first, "utf8"), before);
   assert.equal(readFileSync(join(root, "mcp/skills-manifest.json"), "utf8"), manifest);
+});
+
+/** 验证配置参考、图标及连接器配置全部受摘要保护；入参 t 管理隔离目录，返回 void。 */
+test("配置流程、图标或豆包声明漂移时阻止打包", (t) => {
+  const root = fixture(t);
+  for (const path of ["mcp/skills/everyline-review/references/review-config.md", "mcp/skills/everyline-review/assets/icon.png", "mcp/doubao/mcp.json"]) {
+    const file = join(root, path);
+    const original = readFileSync(file);
+    writeFileSync(file, Buffer.concat([original, Buffer.from("\n")]));
+    assert.throws(() => packageMCPRelease(join(root, "dist"), root), /摘要未同步/);
+    assert.ok(!readdirSync(root).includes("dist"));
+    writeFileSync(file, original);
+  }
 });
 
 /** 验证未登记变更会阻止制品生成；入参 t TestContext 管理隔离目录，返回 void。 */
@@ -92,7 +107,7 @@ test("MCP Skill 制品解压后可独立校验，摘要匹配且不混入 CLI Sk
   execFileSync(process.execPath, [join(extracted, "scripts/sync-mcp-skills.js"), "--check"]);
   assert.deepEqual(checkMCPRelease(extracted).manifest, checkMCPRelease(root).manifest);
   const members = execFileSync("tar", ["-tzf", archive], { encoding: "utf8" }).trim().split("\n");
-  assert.equal(members.length, 5);
+  assert.deepEqual(members.sort(), ["mcp/skills-manifest.json", "mcp/README.md", "scripts/sync-mcp-skills.js", ...Object.keys(checkMCPRelease(root).files)].sort());
   assert.ok(members.every((name) => name.startsWith("mcp/") || name === "scripts/sync-mcp-skills.js"));
   // 解压制品可独立重建宿主导入包，发布过程不需要 Chart checkout 或 CLI。
   execFileSync(process.execPath, [join(extracted, "scripts/sync-mcp-skills.js"), "--package", join(extracted, "dist")]);
@@ -101,8 +116,12 @@ test("MCP Skill 制品解压后可独立校验，摘要匹配且不混入 CLI Sk
     const bundleName = `${name}-mcp-skill-${manifest.version}.zip`;
     for (const base of [root, extracted]) {
       const bundle = join(base, "dist", bundleName);
-      assert.equal(execFileSync("unzip", ["-Z1", bundle], { encoding: "utf8" }), "SKILL.md\n");
+      const paths = ["SKILL.md", ...manifest.skills.find((skill) => skill.name === name).resources.map(({ path }) => path)];
+      assert.deepEqual(execFileSync("unzip", ["-Z1", bundle], { encoding: "utf8" }).trim().split("\n").sort(), paths.sort());
       assert.equal(execFileSync("unzip", ["-p", bundle, "SKILL.md"], { encoding: "utf8" }), contents[name]);
+      for (const { path } of manifest.skills.find((skill) => skill.name === name).resources) {
+        assert.deepEqual(execFileSync("unzip", ["-p", bundle, path]), readFileSync(join(root, "mcp/skills", name, path)));
+      }
       const digest = createHash("sha256").update(readFileSync(bundle)).digest("hex");
       assert.equal(readFileSync(`${bundle}.sha256`, "utf8"), `${digest}  ${bundleName}\n`);
     }
@@ -119,8 +138,40 @@ test("重新打包清除 ZIP 中的旧条目并保持 Skill 正文", (t) => {
   writeFileSync(join(root, "stale.txt"), "old content");
   execFileSync("zip", ["-q", bundle, "stale.txt"], { cwd: root });
   packageMCPRelease(output, root);
-  assert.equal(execFileSync("unzip", ["-Z1", bundle], { encoding: "utf8" }), "SKILL.md\n");
+  assert.deepEqual(execFileSync("unzip", ["-Z1", bundle], { encoding: "utf8" }).trim().split("\n").sort(), ["SKILL.md", "assets/icon.png", "references/review-config.md"]);
   assert.equal(execFileSync("unzip", ["-p", bundle, "SKILL.md"], { encoding: "utf8" }), contents["everyline-review"]);
+});
+
+/** 验证实际 Plugin ZIP 中唯一 Skill、正式展示字段、线上地址及资源解析；入参 t 管理制品，返回 void。 */
+test("豆包 Plugin 只包含一个 Skill，技能与连接器使用相同展示名和原版 Logo", (t) => {
+  const root = fixture(t);
+  packageMCPRelease(join(root, "dist"), root);
+  const { manifest } = checkMCPRelease(root);
+  const bundle = join(root, "dist", `everyline-doubao-plugin-${manifest.version}.zip`);
+  const read = (path) => execFileSync("unzip", ["-p", bundle, path]);
+  const members = execFileSync("unzip", ["-Z1", bundle], { encoding: "utf8" }).trim().split("\n");
+  assert.deepEqual(members.filter((path) => /^skills\/[^/]+\/SKILL.md$/.test(path)), ["skills/everyline-review/SKILL.md"]);
+  const plugin = JSON.parse(read("plugin.json"));
+  const mcp = JSON.parse(read("mcp.json"));
+  const display = plugin.extensions["com.doubao"];
+  const expectedName = "EveryLine | AI 合同审查助手";
+  assert.deepEqual(display.displayName, { zh: expectedName });
+  assert.deepEqual(Object.keys(display).sort(), ["displayName", "displayDescription", "icon", "chatIcon", "mcpServers"].sort());
+  assert.deepEqual(Object.keys(display.mcpServers), Object.keys(mcp.mcpServers));
+  assert.deepEqual(display.mcpServers["everyline-cli-mcp"].displayName, display.displayName);
+  assert.deepEqual(mcp.mcpServers["everyline-cli-mcp"], { type: "streamable-http", url: "https://mcp.qfei.cn/mcp-servers/everyline-cli-mcp" });
+  const entry = read("skills/everyline-review/SKILL.md").toString("utf8");
+  assert.ok(entry.includes(`  display_name: "${expectedName}"`));
+  assert.ok(entry.includes("[审查配置流程](references/review-config.md)"));
+  assert.ok(read("skills/everyline-review/references/review-config.md").length > 0);
+  const logo = readFileSync(join(root, "mcp/skills/everyline-review/assets/icon.png"));
+  assert.equal(logo.readUInt32BE(16), 512);
+  assert.equal(logo.readUInt32BE(20), 512);
+  for (const path of [display.icon, display.chatIcon, display.mcpServers["everyline-cli-mcp"].icon, "./skills/everyline-review/assets/icon.png"]) {
+    assert.match(path, /^\.\//);
+    assert.ok(!path.includes(".."));
+    assert.deepEqual(read(path.slice(2)), logo);
+  }
 });
 
 /** 验证发布标签只匹配现有清单；入参 t TestContext 管理隔离目录，返回 void，拒绝标签时保持正文不变。 */

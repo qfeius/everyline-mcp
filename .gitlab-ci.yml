@@ -34,3 +34,5 @@ package:
       - dist/everyline-mcp-skills-*.tgz.sha256
       - dist/*-mcp-skill-*.zip
       - dist/*-mcp-skill-*.zip.sha256
+      - dist/everyline-doubao-plugin-*.zip
+      - dist/everyline-doubao-plugin-*.zip.sha256
