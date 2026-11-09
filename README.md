@@ -1,6 +1,6 @@
 # everyline-mcp
 
-本项目维护 EveryLine MCP 与 Skill，源码仓库为 [qfeius/everyline-mcp](https://github.com/qfeius/everyline-mcp)。本工程采用 **宿主 Agent 加载独立 EveryLine Skill → 调用 MCP 业务接口 → EveryLine API**。Skill 负责编排，MCP 提供原 CLI 对应的业务接口。
+本项目维护 EveryLine MCP 与 Skill，源码仓库为 [shuai326-zss/everyline-mcp](https://github.com/shuai326-zss/everyline-mcp)。本工程采用 **宿主 Agent 加载独立 EveryLine Skill → 调用 MCP 业务接口 → EveryLine API**。Skill 负责编排，MCP 提供原 CLI 对应的业务接口。
 
 ## 工程组成
 

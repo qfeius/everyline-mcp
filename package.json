@@ -5,11 +5,11 @@
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/qfeius/everyline-mcp.git"
+    "url": "git+https://github.com/shuai326-zss/everyline-mcp.git"
   },
-  "homepage": "https://github.com/qfeius/everyline-mcp",
+  "homepage": "https://github.com/shuai326-zss/everyline-mcp",
   "bugs": {
-    "url": "https://github.com/qfeius/everyline-mcp/issues"
+    "url": "https://github.com/shuai326-zss/everyline-mcp/issues"
   },
   "scripts": {
     "test": "node --test tests/release/*.test.js",
