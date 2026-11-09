@@ -30,7 +30,35 @@ function readSkillFiles(directory, prefix = "") {
 }
 
 /**
- * prepareMCPRelease 校验全部 Skill 身份和版本，在写入前准备正文与摘要。
+ * checkSkillReferences 校验技能说明和图标引用，统一限定在当前技能根目录内。
+ * 入参：name string 为技能名，resources object 为技能内相对路径到原始 Buffer 的映射。
+ * 返回值：void；引用包含父目录跳转、绝对路径或未随包提供的文件时抛出 Error。
+ */
+function checkSkillReferences(name, resources) {
+  // 图标和说明使用相同的资源集合，避免摘要同步后仍发布失效引用。
+  const icon = resources["SKILL.md"].toString("utf8").match(/^  icon: "([^"]+)"\r?$/m)?.[1];
+  const references = [["SKILL.md metadata.icon", icon]];
+  for (const [file, data] of Object.entries(resources)) {
+    if (!file.endsWith(".md")) continue;
+    for (const [, rawTarget] of data.toString("utf8").matchAll(/\[[^\]\n]*\]\(([^)\s]+)\)/g)) {
+      const target = rawTarget.replace(/^<(.+)>$/, "$1");
+      // 页内锚点、外部链接及授权/图片模板占位符不属于包内文件引用。
+      if (target.startsWith("#") || /^(?:https?|mailto):/i.test(target) ||
+          (rawTarget.startsWith("<") && !/[./]/.test(target))) continue;
+      references.push([file, target]);
+    }
+  }
+  for (const [file, target] of references) {
+    const path = target?.split("#")[0].replace(/^\.\//, "");
+    if (!path || path.startsWith("/") || path.includes("\\") || path.split("/").includes("..") ||
+        !Object.hasOwn(resources, path)) {
+      throw new Error(`技能引用越界或不存在: ${name}/${file} -> ${target}`);
+    }
+  }
+}
+
+/**
+ * prepareMCPRelease 校验全部 Skill 身份、版本和引用范围，在写入前准备正文与摘要。
  * 入参：root string 为源码/制品根目录；version string 为 MCP Skill 发布版本；updateVersion boolean 表示同步正文版本。
  * 返回值：object，包含发布 manifest、入口 contents 和全部原始资源 files；格式错误时抛出 Error。
  */
@@ -56,6 +84,7 @@ function prepareMCPRelease(root, version, updateVersion = false) {
         !/^metadata:\r?\n  version: "[^"]+"\r?$/m.test(header[1])) {
       throw new Error(`MCP Skill frontmatter 格式错误: ${name}`);
     }
+    checkSkillReferences(name, resources);
     // 只改 frontmatter，正文中的版本示例和流程说明保持原样。
     const content = updateVersion
       ? source.replace(header[0], header[0].replace(/^  version: .+$/m, `  version: "${version}"`))

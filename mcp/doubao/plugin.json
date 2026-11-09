@@ -12,6 +12,7 @@
       },
       "icon": "./com.doubao/assets/plugin-icon.png",
       "chatIcon": "./com.doubao/assets/plugin-chat-icon.png",
+      "privacyPolicyUrl": "https://zhishuqifei.feishu.cn/wiki/UKmfw1POpiXb51kfSTrcLshLnPb",
       "mcpServers": {
         "everyline-cli-mcp": {
           "displayName": {

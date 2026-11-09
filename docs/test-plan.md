@@ -1,5 +1,13 @@
 # 测试计划
 
+## 3.2.1 技能目录与引用范围
+
+- 技能说明以宿主实际加载的技能目录为唯一根目录；配置流程返回时复用已加载入口，不使用父目录跳转或重复拼接技能名称。
+- 在实际 Skill ZIP 和 Plugin ZIP 中核对本地说明引用均落在所属技能目录内且文件存在；原有父目录引用应使测试失败。
+- 父目录跳转、绝对路径、重复技能目录名和缺失文件在升版及打包前失败，不改写清单、不生成制品；图标引用使用相同的资源范围检查。
+- 实际 Plugin ZIP 的 `extensions.com.doubao.privacyPolicyUrl` 必须与服务提供方确认的正式 HTTPS 隐私政策链接一致。
+- 按[豆包接入指南](https://bytedance.larkoffice.com/docx/J5o2dZK8hoJItxxNQyocHgRzncb)提交修复后的 Plugin ZIP，平台复审结果需单独核对。
+
 ## 3.2.0 单入口 Skill 与豆包插件
 
 - 唯一顶层 Skill 为 `everyline-review`；合同审查保留完整报告、图表与上传流程，配置任务按需读取包内 `references/review-config.md`。组合任务先完成配置确认、写入和回读，再回到入口审查，沿用同一连接器和上下文。

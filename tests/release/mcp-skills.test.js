@@ -142,7 +142,45 @@ test("重新打包清除 ZIP 中的旧条目并保持 Skill 正文", (t) => {
   assert.equal(execFileSync("unzip", ["-p", bundle, "SKILL.md"], { encoding: "utf8" }), contents["everyline-review"]);
 });
 
-/** 验证实际 Plugin ZIP 中唯一 Skill、正式展示字段、线上地址及资源解析；入参 t 管理制品，返回 void。 */
+/** 验证实际导入包中的技能文件引用；入参 t TestContext 管理两类 ZIP，返回 void，引用越界或缺失时失败。 */
+test("Skill ZIP 和 Plugin ZIP 的说明引用均在实际技能根目录内", (t) => {
+  const root = fixture(t);
+  const { manifest } = checkMCPRelease(root);
+  packageMCPRelease(join(root, "dist"), root);
+  // 两种包的安装层级不同，文件引用都必须相对于所属技能根目录解析。
+  for (const [filename, prefix] of [
+    [`everyline-review-mcp-skill-${manifest.version}.zip`, ""],
+    [`everyline-doubao-plugin-${manifest.version}.zip`, "skills/everyline-review/"],
+  ]) {
+    const bundle = join(root, "dist", filename);
+    const members = execFileSync("unzip", ["-Z1", bundle], { encoding: "utf8" }).trim().split("\n");
+    for (const file of members.filter((path) => path.startsWith(prefix) && path.endsWith(".md"))) {
+      const content = execFileSync("unzip", ["-p", bundle, file], { encoding: "utf8" });
+      for (const [, target] of content.matchAll(/\[[^\]\n]*\]\(([^)\s]+)\)/g)) {
+        if (!/\.md(?:#.*)?$/.test(target) || /^https?:\/\//.test(target)) continue;
+        assert.ok(!target.split("/").includes(".."), `${file} 引用越界: ${target}`);
+        assert.ok(members.includes(`${prefix}${target.split("#")[0].replace(/^\.\//, "")}`), `${file} 引用不存在: ${target}`);
+      }
+    }
+  }
+});
+
+/** 验证摘要同步不能绕过资源路径校验；入参 t TestContext 管理无效引用，返回 void，错误路径必须在落盘前失败。 */
+test("技能引用越界、不存在或误拼技能目录名时阻止升版和打包", (t) => {
+  const root = fixture(t);
+  const source = join(root, "mcp/skills/everyline-review/SKILL.md");
+  const original = readFileSync(source, "utf8");
+  const manifest = readFileSync(join(root, "mcp/skills-manifest.json"), "utf8");
+  for (const target of ["../SKILL.md", "references/../../SKILL.md", "/tmp/SKILL.md", "everyline-review/SKILL.md", "references/missing.md"]) {
+    writeFileSync(source, `${original}\n[无效引用](${target})\n`);
+    assert.throws(() => updateMCPRelease("9.9.9", root), /技能引用越界或不存在/);
+    assert.equal(readFileSync(join(root, "mcp/skills-manifest.json"), "utf8"), manifest);
+    assert.throws(() => packageMCPRelease(join(root, "dist"), root), /技能引用越界或不存在/);
+    assert.ok(!readdirSync(root).includes("dist"));
+  }
+});
+
+/** 验证实际 Plugin ZIP 中唯一 Skill、展示字段、隐私政策、线上地址及资源解析；入参 t 管理制品，返回 void。 */
 test("豆包 Plugin 只包含一个 Skill，技能与连接器使用相同展示名和原版 Logo", (t) => {
   const root = fixture(t);
   packageMCPRelease(join(root, "dist"), root);
@@ -156,7 +194,8 @@ test("豆包 Plugin 只包含一个 Skill，技能与连接器使用相同展示
   const display = plugin.extensions["com.doubao"];
   const expectedName = "EveryLine | AI 合同审查助手";
   assert.deepEqual(display.displayName, { zh: expectedName });
-  assert.deepEqual(Object.keys(display).sort(), ["displayName", "displayDescription", "icon", "chatIcon", "mcpServers"].sort());
+  assert.deepEqual(Object.keys(display).sort(), ["displayName", "displayDescription", "icon", "chatIcon", "privacyPolicyUrl", "mcpServers"].sort());
+  assert.equal(display.privacyPolicyUrl, "https://zhishuqifei.feishu.cn/wiki/UKmfw1POpiXb51kfSTrcLshLnPb");
   assert.deepEqual(Object.keys(display.mcpServers), Object.keys(mcp.mcpServers));
   assert.deepEqual(display.mcpServers["everyline-cli-mcp"].displayName, display.displayName);
   assert.deepEqual(mcp.mcpServers["everyline-cli-mcp"], { type: "streamable-http", url: "https://mcp.qfei.cn/mcp-servers/everyline-cli-mcp" });

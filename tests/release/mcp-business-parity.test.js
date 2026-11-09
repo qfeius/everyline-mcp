@@ -73,8 +73,8 @@ function assertRetained(actual, sections) {
   for (const [name, original] of Object.entries(sections)) {
     const source = sections === baseline.configuration
       ? original.replaceAll("本 Skill", "本配置流程").replaceAll("本配置流程 ", "本配置流程")
-        .replaceAll("该步骤属于 `everyline-review`", "该步骤属于入口的[合同审查流程](../SKILL.md#review)")
-        .replaceAll("转回 `everyline-review`", "转回入口的[合同审查流程](../SKILL.md#review)")
+        .replaceAll("该步骤属于 `everyline-review`", "该步骤属于入口已加载的「合同审查流程」")
+        .replaceAll("转回 `everyline-review`", "转回入口已加载的「合同审查流程」")
       : original;
     for (const paragraph of adapted(source).split("\n\n")) {
       assert.ok(actual.includes(paragraph), `release ${baseline.commit} 业务规则遗漏：${name}`);
@@ -133,7 +133,7 @@ test("结果交付先保存签名链接，成功缺链接不误报任务未完�
   }
 });
 
-/** 验证唯一入口按需加载配置参考且不依赖旧读取工具；无入参，返回 void。 */
+/** 验证唯一入口按需加载配置参考并复用已加载章节；无入参，返回 void，出现跨目录入口引用时失败。 */
 test("唯一 Skill 入口直接调用业务工具并路由到包内配置流程", () => {
   for (const skill of [review, configuration]) {
     assert.doesNotMatch(skill, /read-review-(?:config-)?skill/);
@@ -143,6 +143,7 @@ test("唯一 Skill 入口直接调用业务工具并路由到包内配置流程"
   assert.match(review, /宿主直接加载本 Skill/);
   assert.match(review, /\[审查配置流程\]\(references\/review-config\.md\)/);
   assert.doesNotMatch(review, /everyline-review-config/);
-  assert.match(configuration, /\.\.\/SKILL\.md#review/);
+  assert.match(configuration, /入口已加载的「合同审查流程」/);
+  assert.doesNotMatch(configuration, /\.\.\/SKILL\.md/);
   assert.match(review, /blue 授权登录/);
 });
