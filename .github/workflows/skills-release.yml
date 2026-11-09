@@ -1,0 +1,44 @@
+name: Release Skills
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Verify Skill release tag
+        run: node scripts/sync-mcp-skills.js --check-tag "$GITHUB_REF_NAME"
+
+      - name: Test and package Skills
+        run: make release-check
+
+      - name: Publish Skill artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # 制品包含宿主 Skill、豆包 Plugin 与校验脚本，版本以 Skill manifest 为准。
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" dist/everyline-mcp-skills-*.tgz dist/everyline-mcp-skills-*.tgz.sha256 dist/*-mcp-skill-*.zip dist/*-mcp-skill-*.zip.sha256 dist/everyline-doubao-plugin-*.zip dist/everyline-doubao-plugin-*.zip.sha256 --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" dist/everyline-mcp-skills-*.tgz dist/everyline-mcp-skills-*.tgz.sha256 dist/*-mcp-skill-*.zip dist/*-mcp-skill-*.zip.sha256 dist/everyline-doubao-plugin-*.zip dist/everyline-doubao-plugin-*.zip.sha256 --verify-tag --generate-notes
+          fi

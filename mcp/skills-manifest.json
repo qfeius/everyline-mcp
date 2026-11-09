@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 2,
+  "name": "everyline-mcp-skills",
+  "version": "0.0.1",
+  "skills": [
+    {
+      "name": "everyline-review",
+      "sha256": "9c3fdb5e635b7b8e5ff232963b20ea5676b5055002e2b8af36173fd57b403003",
+      "resources": [
+        {
+          "path": "assets/icon.png",
+          "sha256": "1c484b25da32134f491d554832c810e8b3919c60557d10f568066af532cdd0f7"
+        },
+        {
+          "path": "references/review-config.md",
+          "sha256": "318a37dcd4a8dd4beb25927baa06c4126e5b9e7309dfdec378f26078dc14efaa"
+        }
+      ]
+    }
+  ],
+  "doubao": [
+    {
+      "path": "mcp/doubao/plugin.json",
+      "sha256": "c0cde92ceff45a3265b2d11ff1a2f40dcadecce7e22a0f1e6c8ee419811484f7"
+    },
+    {
+      "path": "mcp/doubao/mcp.json",
+      "sha256": "d9f44ffaf9b91283c8a496fd990b2ed12a22f908959fc1262677290895277361"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+# Skill 摘要按发布文件原始字节计算，固定 LF，避免 Git 检出时转换换行符。
+/mcp/skills/**/*.md text eol=lf
+/mcp/skills/**/*.png binary
+/mcp/doubao/*.json text eol=lf
+/mcp/skills-manifest.json text eol=lf

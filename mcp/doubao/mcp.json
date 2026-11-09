@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "everyline-cli-mcp": {
+      "type": "streamable-http",
+      "url": "https://mcp.qfei.cn/mcp-servers/everyline-cli-mcp"
+    }
+  }
+}

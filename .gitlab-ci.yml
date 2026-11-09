@@ -1,0 +1,38 @@
+stages: [test, package]
+
+default:
+  # 复用现有 Node 镜像；ZIP 打包和解包工具在各作业启动时按需补齐。
+  image: matrix-cn-beijing.cr.volces.com/cicd/ubuntu24:npm-22
+  before_script:
+    - |
+      set -e
+      if ! command -v zip >/dev/null 2>&1 || ! command -v unzip >/dev/null 2>&1; then
+        apt-get update
+        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends zip unzip
+      fi
+      command -v zip >/dev/null
+      command -v unzip >/dev/null
+
+test:
+  stage: test
+  script:
+    - npm test
+    - node scripts/sync-mcp-skills.js --check
+    - |
+      if [ -n "${CI_COMMIT_TAG:-}" ]; then
+        node scripts/sync-mcp-skills.js --check-tag "$CI_COMMIT_TAG"
+      fi
+
+package:
+  stage: package
+  needs: [test]
+  script:
+    - node scripts/sync-mcp-skills.js --package dist
+  artifacts:
+    paths:
+      - dist/everyline-mcp-skills-*.tgz
+      - dist/everyline-mcp-skills-*.tgz.sha256
+      - dist/*-mcp-skill-*.zip
+      - dist/*-mcp-skill-*.zip.sha256
+      - dist/everyline-doubao-plugin-*.zip
+      - dist/everyline-doubao-plugin-*.zip.sha256
