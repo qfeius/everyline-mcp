@@ -225,12 +225,17 @@ test("发布标签与 Skill 清单一致，旧标签和预发布标签在发布�
   assert.deepEqual(checkMCPRelease(root).manifest, manifest);
 });
 
-/** 验证维护工作区不再暴露可安装业务入口；无入参，返回 void，误加可执行入口或安装钩子时失败。 */
-test("维护工具清单为私有且没有业务命令入口或安装钩子", () => {
+/** 验证发布包为公开 Skill 资源包且没有业务命令入口或安装钩子；无入参，返回 void。 */
+test("发布包为公开 Skill 资源包且没有业务命令入口或安装钩子", () => {
   const pkg = JSON.parse(readFileSync(join(__dirname, "../../package.json"), "utf8"));
-  assert.equal(pkg.private, true);
+  assert.equal(pkg.name, "@qfeius/everyline-mcp-skills");
+  assert.equal(pkg.private, undefined);
   assert.equal(pkg.bin, undefined);
-  assert.equal(pkg.publishConfig, undefined);
+  assert.deepEqual(pkg.publishConfig, {
+    registry: "https://registry.npmjs.org/",
+    access: "public",
+    tag: "latest",
+  });
   for (const hook of ["preinstall", "install", "postinstall", "prepare", "prepack", "prepublishOnly"]) {
     assert.equal(pkg.scripts[hook], undefined);
   }

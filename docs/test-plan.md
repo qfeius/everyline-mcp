@@ -35,7 +35,7 @@ make release-check
 
 `tests/release/fixtures/release-business-baseline.json` 摘录固定 release `617a2cc47aa208cbc651412003b763afe4c55c41` 的原版业务段落，记录来源和版本；期望值不从 MCP Skill 或 manifest 生成。`mcp-business-parity.test.js` 显式转换 CLI 调用词和 2.2.2 的宿主图表执行及降级条件，继续核对主体映射、完整编号交互、清单规则、配置流程及整段报告的统计、布局和链接原文。历史基线保持原样；更新摘要不会绕过基线检查，不从当前输出覆盖期望值。实际展示效果按下表验收。
 
-`package.json` 是私有维护工具清单；项目不构建或安装 CLI，也不发布 npm 业务命令。GitLab 使用已有 Node 22 镜像运行测试与打包；`default.before_script` 检查 `zip` 和 `unzip`，缺少任意一项时通过 apt 安装两项工具，并在安装后再次检查。`test` 与 `package` 在独立容器中执行，均继承该准备步骤；软件源更新或安装失败时立即结束作业。GitHub 使用 Node 24，发布标签必须与 Skill manifest 完全一致。
+`package.json` 声明公共 Skill 资源包 `@qfeius/everyline-mcp-skills`；项目不构建或安装 CLI，也不发布 npm 业务命令，仅提供 Skill 资源分发。GitLab 使用已有 Node 22 镜像运行测试与打包；`default.before_script` 检查 `zip` 和 `unzip`，缺少任意一项时通过 apt 安装两项工具，并在安装后再次检查。`test` 与 `package` 在独立容器中执行，均继承该准备步骤；软件源更新或安装失败时立即结束作业。GitHub 使用 Node 24，发布标签必须与 Skill manifest 完全一致。
 
 ## MCP Chart
 

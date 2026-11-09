@@ -67,7 +67,7 @@ Chart 使用现有 `/api/public/verify-access-token` 验真，失败关闭访问
 
 迁移至 GitHub 后，Skill 从 `0.0.1` 重新计版，业务逻辑沿用 GitLab 源分支。下文旧版 Skill、MCP 和 Chart 版本用于记录迁移来源与兼容关系。
 
-`mcp/skills-manifest.json` 记录唯一 Skill 的版本、名称、正文、参考流程、图标与豆包声明的 SHA-256，入口的 `metadata.version` 与清单一致。Skill 独立打包给宿主，Chart 不读取或校验 Skill 正文。`package.json` 为私有维护工具清单，不注册业务命令或安装钩子。
+`mcp/skills-manifest.json` 记录唯一 Skill 的版本、名称、正文、参考流程、图标与豆包声明的 SHA-256，入口的 `metadata.version` 与清单一致。Skill 独立打包给宿主，Chart 不读取或校验 Skill 正文。`package.json` 发布为公开 Skill 资源包 `@qfeius/everyline-mcp-skills`，不注册业务命令或安装钩子。
 
 ```sh
 node scripts/sync-mcp-skills.js --version 0.0.1

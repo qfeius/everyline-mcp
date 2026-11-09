@@ -1,22 +1,35 @@
 {
-  "name": "everyline-mcp",
-  "private": true,
-  "description": "EveryLine MCP 宿主 Skill 的校验与发布工具",
+  "name": "@qfeius/everyline-mcp-skills",
+  "version": "0.0.1",
+  "description": "EveryLine MCP 宿主 Skill 资源包",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/shuai326-zss/everyline-mcp.git"
+    "url": "git+https://github.com/qfeius/everyline-mcp.git"
   },
-  "homepage": "https://github.com/shuai326-zss/everyline-mcp",
+  "homepage": "https://github.com/qfeius/everyline-mcp#readme",
   "bugs": {
-    "url": "https://github.com/shuai326-zss/everyline-mcp/issues"
+    "url": "https://github.com/qfeius/everyline-mcp/issues"
   },
+  "files": [
+    "dist/*.zip",
+    "dist/*.sha256",
+    "dist/*.tgz",
+    "mcp/",
+    "README.md"
+  ],
   "scripts": {
     "test": "node --test tests/release/*.test.js",
     "check": "node scripts/sync-mcp-skills.js --check",
     "package": "node scripts/sync-mcp-skills.js --package dist"
   },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public",
+    "tag": "latest"
+  },
   "engines": {
     "node": ">=18"
   }
 }
+

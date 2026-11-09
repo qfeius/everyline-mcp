@@ -13,7 +13,7 @@
 - `tests/release/`：Skill 发布制品回归测试。
 - `docs/`：分层、接口映射与验证说明。
 
-test MCP 的 25 项业务工具、OAuth 与部署配置维护在 `test-contract-charts/everyline-cli-mcp-test/` Chart，共 25 项工具。宿主直接调用该 MCP 入口；本工程已移除 CLI 命令、Go 运行时、本地授权和 Profile、安装器及二进制/npm 发布流程。`package.json` 仅用于运行维护脚本，并标记为私有。项目名称统一为 `everyline-mcp`；已部署的连接器及外部 Chart 沿用 `everyline-cli-mcp` 系列标识，名称不代表存在 CLI 运行层。
+test MCP 的 25 项业务工具、OAuth 与部署配置维护在 `test-contract-charts/everyline-cli-mcp-test/` Chart，共 25 项工具。宿主直接调用该 MCP 入口；本工程已移除 CLI 命令、Go 运行时、本地授权和 Profile、安装器及二进制发布流程。`package.json` 声明公共 Skill 资源包 `@qfeius/everyline-mcp-skills`，供国内等访问受限环境通过 `npm pack` 直接获取 Skill 压缩包。项目名称统一为 `everyline-mcp`；已部署的连接器及外部 Chart 沿用 `everyline-cli-mcp` 系列标识，名称不代表存在 CLI 运行层。
 
 ## 使用流程
 
@@ -48,6 +48,16 @@ make release-check
 
 先发布后端三段会话及 test/blue 公共上传地址、精确 content 放行配置。升级时先在宿主安装新的独立 Skill，再部署移除读取工具的 MCP Chart 并刷新工具清单；旧 Skill 仍依赖读取工具，不能先移除该入口。content 复用原上传服务，commit 仅返回同次结果；Redis 只保存会话元数据及结果，无新增 MCP 上传适配服务或业务数据库字段。
 
-将示例版本替换为本次新版本。Skill ZIP 独立交付给宿主；MCP Chart 独立部署并刷新工具清单。GitLab 校验并产出 Skill 制品；GitHub 仅对与清单一致的 `v<版本>` 标签发布 Skill 制品。发布过程不生成或安装业务命令。
+将示例版本替换为本次新版本。Skill ZIP 独立交付给宿主；MCP Chart 独立部署并刷新工具清单。GitLab 校验并产出 Skill 制品；GitHub 对一致的 `v<版本>` 标签发布 Release 并同步发布至 NPM 镜像。发布过程不生成或安装业务命令。
+
+## 国内环境获取 Skill
+
+对于无法直接访问 GitHub Releases 的网络环境，可通过 NPM 镜像直接下载解压获取 Skill ZIP：
+
+```sh
+npm pack @qfeius/everyline-mcp-skills
+tar -zxvf qfeius-everyline-mcp-skills-*.tgz
+# 解压后即可在 package/dist/ 目录下获取 Skill ZIP 及豆包 Plugin ZIP
+```
 
 详细说明：[架构](docs/architecture.md)、[接口映射](docs/api-mapping.md)、[宿主接入与迁移](mcp/README.md)、[测试计划](docs/test-plan.md)。历史 CLI 实现保留在 Git 历史，原 `everyline-cli` 工程独立维护。
